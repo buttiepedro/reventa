@@ -1,5 +1,8 @@
+import asyncio
 from contextlib import asynccontextmanager
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,8 +11,14 @@ from app.core.config import settings
 from app.core.seed import seed_super_admin
 
 
+def _run_migrations() -> None:
+    alembic_cfg = Config("/app/alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await asyncio.to_thread(_run_migrations)
     await seed_super_admin()
     yield
 
