@@ -1,0 +1,185 @@
+import uuid
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_current_user, get_session
+from app.models.user import Role, User
+from app.schemas.vehicle import (
+    PaginatedResponse,
+    VehicleCreate,
+    VehicleFilters,
+    VehicleListItem,
+    VehicleRead,
+    VehicleStatusUpdate,
+    VehicleUpdate,
+)
+from app.schemas.vehicle_image import UploadUrlResponse, VehicleImageCreate, VehicleImageRead
+from app.services.vehicle import VehicleService
+from app.services.vehicle_image import VehicleImageService
+
+router = APIRouter()
+
+
+# ─── Network listing ─────────────────────────────────────────
+
+
+@router.get("", response_model=PaginatedResponse[VehicleListItem])
+async def list_network_vehicles(
+    brand: Annotated[str | None, Query()] = None,
+    model: Annotated[str | None, Query()] = None,
+    year_min: Annotated[int | None, Query()] = None,
+    year_max: Annotated[int | None, Query()] = None,
+    fuel_type: Annotated[str | None, Query()] = None,
+    transmission: Annotated[str | None, Query()] = None,
+    condition: Annotated[str | None, Query()] = None,
+    status_filter: Annotated[str | None, Query(alias="status")] = "available",
+    company_id: Annotated[uuid.UUID | None, Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from app.models.vehicle import FuelType, Transmission, VehicleCondition, VehicleStatus
+
+    filters = VehicleFilters(
+        brand=brand,
+        model=model,
+        year_min=year_min,
+        year_max=year_max,
+        fuel_type=FuelType(fuel_type) if fuel_type else None,
+        transmission=Transmission(transmission) if transmission else None,
+        condition=VehicleCondition(condition) if condition else None,
+        status=VehicleStatus(status_filter) if status_filter else None,
+        company_id=company_id,
+        page=page,
+        page_size=page_size,
+    )
+    assert current_user.company_id is not None
+    return await VehicleService(session).get_network_list(current_user.company_id, filters)
+
+
+@router.get("/my", response_model=list[VehicleListItem])
+async def list_my_vehicles(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    assert current_user.company_id is not None
+    return await VehicleService(session).get_my_list(current_user.company_id)
+
+
+# ─── CRUD ────────────────────────────────────────────────────
+
+
+@router.post("", response_model=VehicleRead, status_code=status.HTTP_201_CREATED)
+async def create_vehicle(
+    data: VehicleCreate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    assert current_user.company_id is not None
+    svc = VehicleService(session)
+    vehicle = await svc.create(current_user.company_id, data)
+    return await svc.get_detail(vehicle.id, current_user.company_id)
+
+
+@router.get("/{vehicle_id}", response_model=VehicleRead)
+async def get_vehicle(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    company_id = current_user.company_id or uuid.uuid4()
+    return await VehicleService(session).get_detail(vehicle_id, company_id)
+
+
+@router.put("/{vehicle_id}", response_model=VehicleRead)
+async def update_vehicle(
+    vehicle_id: uuid.UUID,
+    data: VehicleUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    svc = VehicleService(session)
+    vehicle = await svc.update(vehicle_id, company_id, data, is_super_admin=is_super)
+    return await svc.get_detail(vehicle.id, company_id)
+
+
+@router.patch("/{vehicle_id}/status", response_model=VehicleRead)
+async def update_vehicle_status(
+    vehicle_id: uuid.UUID,
+    data: VehicleStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    svc = VehicleService(session)
+    vehicle = await svc.update_status(vehicle_id, company_id, data, is_super_admin=is_super)
+    return await svc.get_detail(vehicle.id, company_id)
+
+
+@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vehicle(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    await VehicleService(session).delete(vehicle_id, company_id, is_super_admin=is_super)
+
+
+# ─── Images ──────────────────────────────────────────────────
+
+
+@router.post("/{vehicle_id}/images/upload-url", response_model=UploadUrlResponse)
+async def get_image_upload_url(
+    vehicle_id: uuid.UUID,
+    filename: Annotated[str, Query()],
+    content_type: Annotated[str, Query()] = "image/jpeg",
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    return await VehicleImageService(session).get_upload_url(vehicle_id, company_id, filename, content_type, is_super)
+
+
+@router.post("/{vehicle_id}/images", response_model=VehicleImageRead, status_code=status.HTTP_201_CREATED)
+async def register_image(
+    vehicle_id: uuid.UUID,
+    data: VehicleImageCreate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    return await VehicleImageService(session).register_image(vehicle_id, company_id, data, is_super)
+
+
+@router.delete("/{vehicle_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_image(
+    vehicle_id: uuid.UUID,
+    image_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    await VehicleImageService(session).delete_image(image_id, company_id, is_super)
+
+
+@router.patch("/{vehicle_id}/images/{image_id}/primary", response_model=VehicleImageRead)
+async def set_primary_image(
+    vehicle_id: uuid.UUID,
+    image_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    return await VehicleImageService(session).set_primary(image_id, vehicle_id, company_id, is_super)
