@@ -19,12 +19,14 @@ def _run_migrations() -> None:
         capture_output=True,
         text=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Migrations failed (exit {result.returncode}):\n"
+            f"STDOUT: {result.stdout}\n"
+            f"STDERR: {result.stderr}"
+        )
     if result.stdout:
         print(result.stdout, flush=True)
-    if result.stderr:
-        print(result.stderr, flush=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"Migrations failed (exit {result.returncode})")
     print("Migrations complete.", flush=True)
 
 
