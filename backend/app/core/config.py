@@ -34,12 +34,14 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[misc]
     @property
     def db_url(self) -> str:
-        if self.database_url:
-            return self.database_url
-        return (
+        url = self.database_url or (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+        # Ensure asyncpg driver is always used regardless of what's in .env
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        return url
 
     @property
     def is_development(self) -> bool:
