@@ -22,7 +22,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[Role] = mapped_column(Enum(Role, name="userrole"), nullable=False)
+    role: Mapped[Role] = mapped_column(
+        Enum(Role, name="userrole", values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     company_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=True, index=True
     )

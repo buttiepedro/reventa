@@ -48,9 +48,9 @@ class Vehicle(Base):
     version: Mapped[str | None] = mapped_column(String(100), nullable=True)
     color: Mapped[str] = mapped_column(String(50), nullable=False)
     mileage: Mapped[int] = mapped_column(Integer, nullable=False)
-    fuel_type: Mapped[FuelType] = mapped_column(Enum(FuelType, name="fueltype"), nullable=False)
-    transmission: Mapped[Transmission] = mapped_column(Enum(Transmission, name="transmission"), nullable=False)
-    condition: Mapped[VehicleCondition] = mapped_column(Enum(VehicleCondition, name="vehiclecondition"), nullable=False)
+    fuel_type: Mapped[FuelType] = mapped_column(Enum(FuelType, name="fueltype", values_callable=lambda x: [e.value for e in x]), nullable=False)
+    transmission: Mapped[Transmission] = mapped_column(Enum(Transmission, name="transmission", values_callable=lambda x: [e.value for e in x]), nullable=False)
+    condition: Mapped[VehicleCondition] = mapped_column(Enum(VehicleCondition, name="vehiclecondition", values_callable=lambda x: [e.value for e in x]), nullable=False)
     body_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     price_resale: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
@@ -58,7 +58,9 @@ class Vehicle(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     status: Mapped[VehicleStatus] = mapped_column(
-        Enum(VehicleStatus, name="vehiclestatus"), nullable=False, default=VehicleStatus.AVAILABLE
+        Enum(VehicleStatus, name="vehiclestatus", values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=VehicleStatus.AVAILABLE,
     )
     share_token: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), unique=True, default=uuid.uuid4, nullable=False)
 
