@@ -1,8 +1,8 @@
 import asyncio
+import subprocess
+import sys
 from contextlib import asynccontextmanager
 
-from alembic import command
-from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,11 +12,20 @@ from app.core.seed import seed_super_admin
 
 
 def _run_migrations() -> None:
-    import logging
-    logging.info("Running database migrations — DB: %s", settings.db_url.split("@")[-1])
-    alembic_cfg = Config("/app/alembic.ini")
-    command.upgrade(alembic_cfg, "head")
-    logging.info("Migrations complete.")
+    print(f"Running migrations against: {settings.db_url.split('@')[-1]}", flush=True)
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd="/app",
+        capture_output=True,
+        text=True,
+    )
+    if result.stdout:
+        print(result.stdout, flush=True)
+    if result.stderr:
+        print(result.stderr, flush=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"Migrations failed (exit {result.returncode})")
+    print("Migrations complete.", flush=True)
 
 
 @asynccontextmanager
