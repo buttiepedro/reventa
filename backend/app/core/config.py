@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     s3_bucket: str = "reventa-vehicles"
     s3_endpoint_url: str | None = None
 
+    # Comma-separated list of allowed CORS origins
+    cors_origins: str = "http://localhost:5173"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
     @computed_field  # type: ignore[misc]
     @property
     def db_url(self) -> str:
