@@ -13,16 +13,19 @@ down_revision = "0001"
 branch_labels = None
 depends_on = None
 
+# Enum definitions with create_type=False so they're never auto-created by create_table
+_fuel_type = postgresql.ENUM("gasoline", "diesel", "electric", "hybrid", "gnc", name="fueltype", create_type=False)
+_transmission = postgresql.ENUM("manual", "automatic", name="transmission", create_type=False)
+_vehicle_condition = postgresql.ENUM("new", "used", name="vehiclecondition", create_type=False)
+_vehicle_status = postgresql.ENUM("available", "reserved", "sold", name="vehiclestatus", create_type=False)
+
 
 def upgrade() -> None:
-    # Enums
-    fuel_type = postgresql.ENUM("gasoline", "diesel", "electric", "hybrid", "gnc", name="fueltype", create_type=False)
-    transmission = postgresql.ENUM("manual", "automatic", name="transmission", create_type=False)
-    vehicle_condition = postgresql.ENUM("new", "used", name="vehiclecondition", create_type=False)
-    vehicle_status = postgresql.ENUM("available", "reserved", "sold", name="vehiclestatus", create_type=False)
+    bind = op.get_bind()
 
-    for enum in (fuel_type, transmission, vehicle_condition, vehicle_status):
-        enum.create(op.get_bind(), checkfirst=True)
+    # Create enum types only if they don't already exist
+    for enum in (_fuel_type, _transmission, _vehicle_condition, _vehicle_status):
+        enum.create(bind, checkfirst=True)
 
     op.create_table(
         "vehicles",
@@ -34,17 +37,17 @@ def upgrade() -> None:
         sa.Column("version", sa.String(100), nullable=True),
         sa.Column("color", sa.String(50), nullable=False),
         sa.Column("mileage", sa.Integer(), nullable=False),
-        sa.Column("fuel_type", sa.Enum("gasoline", "diesel", "electric", "hybrid", "gnc", name="fueltype"), nullable=False),
-        sa.Column("transmission", sa.Enum("manual", "automatic", name="transmission"), nullable=False),
-        sa.Column("condition", sa.Enum("new", "used", name="vehiclecondition"), nullable=False),
+        sa.Column("fuel_type", _fuel_type, nullable=False),
+        sa.Column("transmission", _transmission, nullable=False),
+        sa.Column("condition", _vehicle_condition, nullable=False),
         sa.Column("body_type", sa.String(50), nullable=True),
         sa.Column("price_resale", sa.Numeric(12, 2), nullable=False),
         sa.Column("price_public", sa.Numeric(12, 2), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("status", sa.Enum("available", "reserved", "sold", name="vehiclestatus"), nullable=False, server_default="available"),
+        sa.Column("status", _vehicle_status, nullable=False, server_default="available"),
         sa.Column("share_token", postgresql.UUID(as_uuid=True), unique=True, nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 
     op.create_table(
@@ -70,5 +73,6 @@ def downgrade() -> None:
     op.drop_table("vehicle_images")
     op.drop_table("vehicles")
 
-    for name in ("vehiclestatus", "vehiclecondition", "transmission", "fueltype"):
-        op.execute(f"DROP TYPE IF EXISTS {name}")
+    bind = op.get_bind()
+    for enum in (_vehicle_status, _vehicle_condition, _transmission, _fuel_type):
+        enum.drop(bind, checkfirst=True)
