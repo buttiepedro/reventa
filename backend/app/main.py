@@ -12,13 +12,22 @@ from app.core.seed import seed_super_admin
 
 
 def _run_migrations() -> None:
+    import logging
+    logger = logging.getLogger("alembic.runtime.migration")
+    logger.info("Running database migrations...")
     alembic_cfg = Config("/app/alembic.ini")
     command.upgrade(alembic_cfg, "head")
+    logger.info("Migrations complete.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await asyncio.to_thread(_run_migrations)
+    try:
+        await asyncio.wait_for(asyncio.to_thread(_run_migrations), timeout=60)
+    except asyncio.TimeoutError:
+        raise RuntimeError("Database migrations timed out — check DATABASE_URL and DB connectivity")
+    except Exception as exc:
+        raise RuntimeError(f"Database migrations failed: {exc}") from exc
     await seed_super_admin()
     yield
 
