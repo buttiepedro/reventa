@@ -1,3 +1,4 @@
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,8 +10,14 @@ class Settings(BaseSettings):
     secret_key: str
     access_token_expire_minutes: int = 60
 
-    # Database
-    database_url: str
+    # Database — individual vars are used to build the URL automatically
+    postgres_user: str = "reventa_user"
+    postgres_password: str = "changeme"
+    postgres_host: str = "db"
+    postgres_port: int = 5432
+    postgres_db: str = "reventa"
+    # Override the full URL directly if needed (takes precedence)
+    database_url: str = ""
 
     # Super admin — seeded on first deploy
     admin_email: str
@@ -22,7 +29,17 @@ class Settings(BaseSettings):
     aws_secret_access_key: str = "test"
     aws_region: str = "us-east-1"
     s3_bucket: str = "reventa-vehicles"
-    s3_endpoint_url: str | None = None  # set to LocalStack URL in dev
+    s3_endpoint_url: str | None = None
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def db_url(self) -> str:
+        if self.database_url:
+            return self.database_url
+        return (
+            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
 
     @property
     def is_development(self) -> bool:
