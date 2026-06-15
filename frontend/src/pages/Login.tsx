@@ -2,6 +2,8 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import type { ApiError } from "@/types";
 
 const REDIRECT: Record<string, string> = {
@@ -38,68 +40,45 @@ export function Login() {
   if (isLoading) return null;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f9fafb",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          padding: "2.5rem",
-          borderRadius: 12,
-          border: "1px solid #e5e7eb",
-          width: "100%",
-          maxWidth: 400,
-        }}
-      >
-        <h1 style={{ marginBottom: "1.5rem", fontSize: "1.5rem" }}>Reventa — Sign in</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 px-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black text-blue-700 tracking-tight">Reventa</h1>
+          <p className="text-sm text-gray-500 mt-1">Red de concesionarias</p>
+        </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.9rem" }}>
-            Email
-            <input
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Iniciar sesión</h2>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+              label="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ padding: "0.5rem", borderRadius: 6, border: "1px solid #d1d5db" }}
+              autoComplete="email"
+              placeholder="usuario@empresa.com"
             />
-          </label>
-
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.9rem" }}>
-            Password
-            <input
+            <Input
+              label="Contraseña"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ padding: "0.5rem", borderRadius: 6, border: "1px solid #d1d5db" }}
+              autoComplete="current-password"
+              placeholder="••••••••"
             />
-          </label>
 
-          {error && <p style={{ color: "#dc2626", margin: 0, fontSize: "0.9rem" }}>{error}</p>}
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+            )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              padding: "0.75rem",
-              borderRadius: 6,
-              background: "#2563eb",
-              color: "#fff",
-              border: "none",
-              cursor: submitting ? "not-allowed" : "pointer",
-              fontWeight: 600,
-            }}
-          >
-            {submitting ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+            <Button type="submit" loading={submitting} className="w-full mt-2" size="lg">
+              {submitting ? "Ingresando…" : "Ingresar"}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

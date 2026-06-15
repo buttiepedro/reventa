@@ -1,8 +1,10 @@
 import uuid
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.company import Company
 from app.repositories.company import CompanyRepository
 from app.repositories.company_favorite import CompanyFavoriteRepository
 from app.schemas.company import CompanyRead
@@ -15,12 +17,12 @@ class FavoriteService:
 
     async def get_favorites(self, company_id: uuid.UUID) -> list[CompanyRead]:
         fav_ids = await self.fav_repo.get_favorites(company_id)
-        companies = []
-        for fid in fav_ids:
-            c = await self.company_repo.get_by_id(fid)
-            if c:
-                companies.append(CompanyRead.model_validate(c))
-        return companies
+        if not fav_ids:
+            return []
+        result = await self.company_repo.session.execute(
+            select(Company).where(Company.id.in_(fav_ids))
+        )
+        return [CompanyRead.model_validate(c) for c in result.scalars().all()]
 
     async def add_favorite(self, company_id: uuid.UUID, target_id: uuid.UUID) -> None:
         if company_id == target_id:

@@ -1,24 +1,27 @@
 import { useEffect, useState } from "react";
-import { vehicleService } from "../../services/vehicleService";
-import type { Company } from "../../types";
+import { toast } from "sonner";
+import { vehicleService } from "@/services/vehicleService";
+import { companyService } from "@/services/companyService";
+import { Button } from "@/components/ui/Button";
+import { Spinner } from "@/components/ui/Spinner";
+import type { Company } from "@/types";
 
 export function Favorites() {
   const [favorites, setFavorites] = useState<Company[]>([]);
   const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const [favs, all] = await Promise.all([
         vehicleService.listFavorites(),
-        import("../../services/companyService").then((m) => m.companyService.list()),
+        companyService.list(),
       ]);
       setFavorites(favs);
       setAllCompanies(all);
     } catch {
-      setError("Error al cargar las concesionarias.");
+      toast.error("Error al cargar las concesionarias.");
     } finally {
       setLoading(false);
     }
@@ -27,13 +30,15 @@ export function Favorites() {
   useEffect(() => { load(); }, []);
 
   const favIds = new Set(favorites.map((f) => f.id));
+  const nonFavorites = allCompanies.filter((c) => !favIds.has(c.id));
 
   const handleAdd = async (id: string) => {
     try {
       await vehicleService.addFavorite(id);
-      load();
+      await load();
+      toast.success("Concesionaria agregada a favoritas.");
     } catch {
-      alert("No se pudo agregar como favorita.");
+      toast.error("No se pudo agregar como favorita.");
     }
   };
 
@@ -41,65 +46,61 @@ export function Favorites() {
     try {
       await vehicleService.removeFavorite(id);
       setFavorites((fs) => fs.filter((f) => f.id !== id));
+      toast.success("Concesionaria quitada de favoritas.");
     } catch {
-      alert("No se pudo quitar de favoritas.");
+      toast.error("No se pudo quitar de favoritas.");
     }
   };
 
-  const nonFavorites = allCompanies.filter((c) => !favIds.has(c.id));
-
   return (
-    <div style={{ padding: "0 0 40px" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Concesionarias favoritas</h2>
-      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 20 }}>
-        Los vehículos de tus favoritas aparecen primero en la red.
-      </p>
+    <div className="pb-10 max-w-2xl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Concesionarias favoritas</h1>
+        <p className="text-sm text-gray-500 mt-1">Los vehículos de tus favoritas aparecen primero en la red.</p>
+      </div>
 
-      {loading && <div style={{ color: "#6b7280" }}>Cargando...</div>}
-      {error && <div style={{ color: "#dc2626" }}>{error}</div>}
+      {loading && <div className="flex justify-center py-24"><Spinner /></div>}
 
       {!loading && (
-        <>
+        <div className="space-y-6">
           {favorites.length > 0 && (
-            <div style={{ marginBottom: 32 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 10, color: "#374151" }}>Tus favoritas</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <section>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">Tus favoritas</h2>
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                 {favorites.map((c) => (
-                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8 }}>
+                  <div key={c.id} className="flex items-center justify-between px-4 py-3">
                     <div>
-                      <div style={{ fontWeight: 600 }}>★ {c.name}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>{c.slug}</div>
+                      <p className="font-semibold text-gray-900">★ {c.name}</p>
+                      <p className="text-xs text-gray-400">{c.slug}</p>
                     </div>
-                    <button onClick={() => handleRemove(c.id)} style={{ padding: "6px 12px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                      Quitar
-                    </button>
+                    <Button variant="danger" size="sm" onClick={() => handleRemove(c.id)}>Quitar</Button>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
           {nonFavorites.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 10, color: "#374151" }}>Otras concesionarias</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <section>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">Otras concesionarias</h2>
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                 {nonFavorites.map((c) => (
-                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                  <div key={c.id} className="flex items-center justify-between px-4 py-3">
                     <div>
-                      <div style={{ fontWeight: 600 }}>{c.name}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>{c.slug}</div>
+                      <p className="font-semibold text-gray-900">{c.name}</p>
+                      <p className="text-xs text-gray-400">{c.slug}</p>
                     </div>
-                    <button onClick={() => handleAdd(c.id)} style={{ padding: "6px 12px", background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                      + Favorita
-                    </button>
+                    <Button variant="secondary" size="sm" onClick={() => handleAdd(c.id)}>+ Favorita</Button>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
-          {allCompanies.length === 0 && <div style={{ color: "#9ca3af" }}>No hay otras concesionarias en la red.</div>}
-        </>
+          {allCompanies.length === 0 && (
+            <p className="text-gray-400 text-sm">No hay otras concesionarias en la red.</p>
+          )}
+        </div>
       )}
     </div>
   );

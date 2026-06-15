@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session
@@ -56,7 +56,8 @@ async def list_network_vehicles(
         page=page,
         page_size=page_size,
     )
-    assert current_user.company_id is not None
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
     return await VehicleService(session).get_network_list(current_user.company_id, filters)
 
 
@@ -65,7 +66,8 @@ async def list_my_vehicles(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    assert current_user.company_id is not None
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
     return await VehicleService(session).get_my_list(current_user.company_id)
 
 

@@ -55,6 +55,7 @@ class VehicleImageService:
         vehicle = await self.vehicle_repo.get_by_id(image.vehicle_id)
         if vehicle:
             self._assert_owner(vehicle.company_id, company_id, is_super_admin)
+        await s3.delete_object(image.s3_key)
         await self.repo.delete(image)
 
     async def set_primary(self, image_id: uuid.UUID, vehicle_id: uuid.UUID, company_id: uuid.UUID, is_super_admin: bool = False) -> VehicleImageRead:

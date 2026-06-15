@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { vehicleService } from "../../services/vehicleService";
-import { ImageUploader } from "../../components/vehicles/ImageUploader";
-import { useAuth } from "../../hooks/useAuth";
-import type { Vehicle } from "../../types/vehicle";
+import { toast } from "sonner";
+import { vehicleService } from "@/services/vehicleService";
+import { ImageUploader } from "@/components/vehicles/ImageUploader";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Spinner } from "@/components/ui/Spinner";
+import { useAuth } from "@/hooks/useAuth";
+import type { Vehicle } from "@/types/vehicle";
 
 const FUEL_LABELS: Record<string, string> = {
   gasoline: "Nafta", diesel: "Diesel", electric: "Eléctrico", hybrid: "Híbrido", gnc: "GNC",
+};
+
+const STATUS_TONE: Record<string, "green" | "yellow" | "red"> = {
+  available: "green", reserved: "yellow", sold: "red",
+};
+const STATUS_LABELS: Record<string, string> = {
+  available: "Disponible", reserved: "Reservado", sold: "Vendido",
 };
 
 export function VehicleDetail() {
@@ -34,9 +45,9 @@ export function VehicleDetail() {
 
   const copyShareLink = () => {
     if (!vehicle) return;
-    const url = `${window.location.origin}/share/${vehicle.share_token}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(`${window.location.origin}/share/${vehicle.share_token}`);
     setCopied(true);
+    toast.success("Link copiado al portapapeles.");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -52,66 +63,66 @@ export function VehicleDetail() {
     load();
   };
 
-  if (loading) return <div style={{ color: "#6b7280", padding: 40 }}>Cargando...</div>;
-  if (!vehicle) return <div style={{ color: "#dc2626", padding: 40 }}>Vehículo no encontrado.</div>;
+  if (loading) return <div className="flex justify-center py-24"><Spinner /></div>;
+  if (!vehicle) return <div className="text-red-600 p-10">Vehículo no encontrado.</div>;
 
   const images = vehicle.images ?? [];
 
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 0 60px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 14 }}>
+    <div className="max-w-4xl mx-auto pb-16">
+      {/* Top bar */}
+      <div className="flex justify-between items-center mb-6">
+        <button onClick={() => navigate(-1)} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
           ← Volver
         </button>
         {canEdit && (
-          <div style={{ display: "flex", gap: 8 }}>
-            <Link to={`/vehicles/${id}/edit`} style={btnStyle("#eff6ff", "#2563eb")}>Editar</Link>
-          </div>
+          <Link to={`/vehicles/${id}/edit`}>
+            <Button variant="secondary" size="sm">Editar</Button>
+          </Link>
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Gallery */}
         <div>
-          <div style={{ width: "100%", aspectRatio: "4/3", background: "#f3f4f6", borderRadius: 10, overflow: "hidden", marginBottom: 10 }}>
+          <div className="w-full aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden mb-3">
             {images[activeImg] ? (
-              <img src={images[activeImg].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={images[activeImg].url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>Sin imagen</div>
+              <div className="flex items-center justify-center h-full text-gray-400">Sin imagen</div>
             )}
           </div>
           {images.length > 1 && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <div className="flex gap-2 flex-wrap">
               {images.map((img, i) => (
-                <div key={img.id} style={{ position: "relative" }}>
+                <div key={img.id} className="relative">
                   <img
                     src={img.url}
                     alt=""
                     onClick={() => setActiveImg(i)}
-                    style={{
-                      width: 64, height: 48, objectFit: "cover", borderRadius: 6, cursor: "pointer",
-                      border: i === activeImg ? "2px solid #2563eb" : "2px solid transparent",
-                    }}
+                    className={`w-16 h-12 object-cover rounded-lg cursor-pointer transition-all ${
+                      i === activeImg ? "ring-2 ring-blue-500" : "opacity-70 hover:opacity-100"
+                    }`}
                   />
                   {img.is_primary && (
-                    <span style={{ position: "absolute", top: 2, left: 2, background: "#2563eb", color: "#fff", fontSize: 9, padding: "1px 4px", borderRadius: 4 }}>★</span>
+                    <span className="absolute top-0.5 left-0.5 bg-blue-600 text-white text-[9px] px-1 rounded">★</span>
                   )}
                 </div>
               ))}
             </div>
           )}
           {canEdit && (
-            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="mt-4 space-y-3">
               <ImageUploader vehicleId={vehicle.id} onUploaded={load} />
               {images.length > 0 && (
-                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                <div className="flex flex-wrap gap-3">
                   {images.map((img, i) => (
-                    <span key={img.id} style={{ marginRight: 8 }}>
-                      <button onClick={() => handleSetPrimary(img.id)} style={{ fontSize: 11, background: "none", border: "none", color: "#2563eb", cursor: "pointer" }}>
+                    <span key={img.id} className="flex gap-2 text-xs">
+                      <button onClick={() => handleSetPrimary(img.id)} className="text-blue-600 hover:underline">
                         {img.is_primary ? "★ Principal" : "Hacer principal"}
                       </button>
-                      {" · "}
-                      <button onClick={() => handleDeleteImage(img.id)} style={{ fontSize: 11, background: "none", border: "none", color: "#dc2626", cursor: "pointer" }}>
+                      <span className="text-gray-300">·</span>
+                      <button onClick={() => handleDeleteImage(img.id)} className="text-red-500 hover:underline">
                         Eliminar {i + 1}
                       </button>
                     </span>
@@ -124,60 +135,53 @@ export function VehicleDetail() {
 
         {/* Info */}
         <div>
-          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>{vehicle.company_name}</div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px" }}>
-            {vehicle.brand} {vehicle.model} {vehicle.year}
-          </h1>
-          {vehicle.version && <div style={{ color: "#6b7280", marginBottom: 12 }}>{vehicle.version}</div>}
+          <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{vehicle.company_name}</p>
+          <div className="flex items-start gap-3 mb-1">
+            <h1 className="text-2xl font-black text-gray-900">
+              {vehicle.brand} {vehicle.model} <span className="font-normal text-gray-500">{vehicle.year}</span>
+            </h1>
+            <Badge tone={STATUS_TONE[vehicle.status] ?? "gray"} className="mt-1 shrink-0">
+              {STATUS_LABELS[vehicle.status]}
+            </Badge>
+          </div>
+          {vehicle.version && <p className="text-gray-500 mb-4">{vehicle.version}</p>}
 
-          <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-            <Tag>{vehicle.mileage.toLocaleString()} km</Tag>
-            <Tag>{FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type}</Tag>
-            <Tag>{vehicle.transmission === "manual" ? "Manual" : "Automático"}</Tag>
-            <Tag>{vehicle.condition === "new" ? "Nuevo" : "Usado"}</Tag>
-            {vehicle.body_type && <Tag>{vehicle.body_type}</Tag>}
-            <Tag>{vehicle.color}</Tag>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {[
+              `${vehicle.mileage.toLocaleString()} km`,
+              FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type,
+              vehicle.transmission === "manual" ? "Manual" : "Automático",
+              vehicle.condition === "new" ? "Nuevo" : "Usado",
+              vehicle.body_type,
+              vehicle.color,
+            ].filter(Boolean).map((tag) => (
+              <span key={tag} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-1 text-sm">{tag}</span>
+            ))}
           </div>
 
-          <div style={{ background: "#f8fafc", borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>Precio reventa</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#1d4ed8" }}>
-                ${Number(vehicle.price_resale).toLocaleString()}
-              </div>
+          <div className="bg-blue-50 rounded-xl p-5 mb-6">
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Precio reventa</p>
+              <p className="text-3xl font-black text-blue-700">${Number(vehicle.price_resale).toLocaleString()}</p>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>Precio público</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#374151" }}>
-                ${Number(vehicle.price_public).toLocaleString()}
-              </div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Precio público</p>
+              <p className="text-xl font-bold text-gray-700">${Number(vehicle.price_public).toLocaleString()}</p>
             </div>
           </div>
 
           {vehicle.description && (
-            <p style={{ color: "#374151", fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>{vehicle.description}</p>
+            <p className="text-gray-600 text-sm leading-relaxed mb-6">{vehicle.description}</p>
           )}
 
-          <button
+          <Button
+            variant={copied ? "primary" : "secondary"}
             onClick={copyShareLink}
-            style={{ padding: "9px 18px", background: copied ? "#16a34a" : "#f3f4f6", color: copied ? "#fff" : "#374151", border: "1px solid #d1d5db", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 500 }}
           >
             {copied ? "¡Link copiado!" : "Copiar link público"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
-}
-
-function Tag({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{ background: "#f3f4f6", borderRadius: 6, padding: "3px 10px", fontSize: 13, color: "#374151" }}>
-      {children}
-    </span>
-  );
-}
-
-function btnStyle(bg: string, color: string): React.CSSProperties {
-  return { padding: "7px 14px", background: bg, color, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 500, textDecoration: "none" };
 }

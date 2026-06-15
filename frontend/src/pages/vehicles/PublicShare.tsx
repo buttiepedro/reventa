@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { vehicleService } from "../../services/vehicleService";
-import type { VehiclePublic } from "../../types/vehicle";
+import { vehicleService } from "@/services/vehicleService";
+import { Spinner } from "@/components/ui/Spinner";
+import type { VehiclePublic } from "@/types/vehicle";
 
 const FUEL_LABELS: Record<string, string> = {
   gasoline: "Nafta", diesel: "Diesel", electric: "Eléctrico", hybrid: "Híbrido", gnc: "GNC",
@@ -24,18 +25,18 @@ export function PublicShare() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
-        <div style={{ color: "#6b7280" }}>Cargando...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Spinner />
       </div>
     );
   }
 
   if (notFound || !vehicle) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🚗</div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Vehículo no encontrado</h1>
-        <p style={{ color: "#6b7280" }}>Este link puede haber expirado o ser inválido.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+        <p className="text-5xl mb-4">🚗</p>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">Vehículo no encontrado</h1>
+        <p className="text-gray-500 text-sm">Este link puede haber expirado o ser inválido.</p>
       </div>
     );
   }
@@ -43,46 +44,48 @@ export function PublicShare() {
   const images = vehicle.images ?? [];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
-      <div style={{ background: "#1e3a8a", padding: "14px 24px", marginBottom: 0 }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", color: "#fff", fontWeight: 700, fontSize: 18 }}>Reventa</div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Branding bar */}
+      <div className="bg-blue-700 px-4 py-3">
+        <div className="max-w-4xl mx-auto text-white font-black text-lg tracking-tight">Reventa</div>
       </div>
 
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "32px 20px 60px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Gallery */}
           <div>
-            <div style={{ width: "100%", aspectRatio: "4/3", background: "#e5e7eb", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+            <div className="w-full aspect-[4/3] bg-gray-200 rounded-xl overflow-hidden mb-3">
               {images[activeImg] ? (
-                <img src={images[activeImg].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={images[activeImg].url} alt="" className="w-full h-full object-cover" />
               ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>Sin imagen</div>
+                <div className="flex items-center justify-center h-full text-gray-400">Sin imagen</div>
               )}
             </div>
             {images.length > 1 && (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <div className="flex gap-2 flex-wrap">
                 {images.map((img, i) => (
                   <img
                     key={img.id}
                     src={img.url}
                     alt=""
                     onClick={() => setActiveImg(i)}
-                    style={{
-                      width: 60, height: 44, objectFit: "cover", borderRadius: 5, cursor: "pointer",
-                      border: i === activeImg ? "2px solid #1d4ed8" : "2px solid transparent",
-                    }}
+                    className={`w-16 h-12 object-cover rounded-lg cursor-pointer transition-all ${
+                      i === activeImg ? "ring-2 ring-blue-500" : "opacity-60 hover:opacity-100"
+                    }`}
                   />
                 ))}
               </div>
             )}
           </div>
 
+          {/* Info */}
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>
-              {vehicle.brand} {vehicle.model} {vehicle.year}
+            <h1 className="text-2xl font-black text-gray-900 mb-1">
+              {vehicle.brand} {vehicle.model} <span className="font-normal text-gray-500">{vehicle.year}</span>
             </h1>
-            {vehicle.version && <div style={{ color: "#6b7280", marginBottom: 14 }}>{vehicle.version}</div>}
+            {vehicle.version && <p className="text-gray-500 mb-4">{vehicle.version}</p>}
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+            <div className="flex flex-wrap gap-2 mb-6">
               {[
                 `${vehicle.mileage.toLocaleString()} km`,
                 FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type,
@@ -91,16 +94,16 @@ export function PublicShare() {
                 vehicle.body_type,
                 vehicle.color,
               ].filter(Boolean).map((tag) => (
-                <span key={tag} style={{ background: "#e5e7eb", borderRadius: 6, padding: "3px 10px", fontSize: 13 }}>{tag}</span>
+                <span key={tag} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-1 text-sm">{tag}</span>
               ))}
             </div>
 
             {vehicle.description && (
-              <p style={{ color: "#374151", fontSize: 14, lineHeight: 1.65 }}>{vehicle.description}</p>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">{vehicle.description}</p>
             )}
 
-            <div style={{ marginTop: 20, padding: "12px 16px", background: "#eff6ff", borderRadius: 8, color: "#1d4ed8", fontSize: 13 }}>
-              ¿Interesado? Contactá a tu concesionaria de confianza.
+            <div className="bg-blue-50 rounded-xl p-4 text-blue-700 text-sm font-medium">
+              ¿Interesado? Contactá a tu concesionaria de confianza para más información.
             </div>
           </div>
         </div>

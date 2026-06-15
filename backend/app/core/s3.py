@@ -56,3 +56,9 @@ async def generate_view_url(s3_key: str) -> str:
 
 async def ensure_bucket() -> None:
     await asyncio.to_thread(_sync_ensure_bucket)
+
+
+async def delete_object(s3_key: str) -> None:
+    await asyncio.to_thread(
+        lambda: _client().delete_object(Bucket=settings.s3_bucket, Key=s3_key)
+    )

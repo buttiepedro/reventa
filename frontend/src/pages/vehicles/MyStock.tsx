@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { vehicleService } from "../../services/vehicleService";
-import type { VehicleListItem, VehicleStatus } from "../../types/vehicle";
+import { toast } from "sonner";
+import { vehicleService } from "@/services/vehicleService";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Spinner } from "@/components/ui/Spinner";
+import type { VehicleListItem, VehicleStatus } from "@/types/vehicle";
 
 const STATUS_LABELS: Record<string, string> = {
   available: "Disponible",
   reserved: "Reservado",
   sold: "Vendido",
+};
+
+const STATUS_TONE: Record<string, "green" | "yellow" | "red"> = {
+  available: "green",
+  reserved: "yellow",
+  sold: "red",
 };
 
 const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
@@ -19,14 +29,13 @@ export function MyStock() {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<VehicleListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       setVehicles(await vehicleService.listMy());
     } catch {
-      setError("Error al cargar tu stock.");
+      toast.error("Error al cargar tu stock.");
     } finally {
       setLoading(false);
     }
@@ -39,75 +48,76 @@ export function MyStock() {
     try {
       await vehicleService.delete(id);
       setVehicles((vs) => vs.filter((v) => v.id !== id));
+      toast.success("Vehículo eliminado.");
     } catch {
-      alert("Error al eliminar el vehículo.");
+      toast.error("Error al eliminar el vehículo.");
     }
   };
 
   const handleStatusChange = async (id: string, status: VehicleStatus) => {
     try {
       const updated = await vehicleService.updateStatus(id, status);
-      setVehicles((vs) => vs.map((v) => (v.id === id ? { ...v, status: updated.status } : v)));
+      setVehicles((vs) => vs.map((v) => v.id === id ? { ...v, status: updated.status } : v));
+      toast.success("Estado actualizado.");
     } catch {
-      alert("Error al cambiar el estado.");
+      toast.error("Error al cambiar el estado.");
     }
   };
 
   return (
-    <div style={{ padding: "0 0 40px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700 }}>Mi stock</h2>
-        <Link
-          to="/vehicles/new"
-          style={{ padding: "8px 18px", background: "#2563eb", color: "#fff", borderRadius: 6, textDecoration: "none", fontWeight: 600, fontSize: 14 }}
-        >
-          + Nuevo vehículo
+    <div className="pb-10">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Mi stock</h1>
+        <Link to="/vehicles/new">
+          <Button>+ Nuevo vehículo</Button>
         </Link>
       </div>
 
-      {loading && <div style={{ color: "#6b7280" }}>Cargando...</div>}
-      {error && <div style={{ color: "#dc2626" }}>{error}</div>}
+      {loading && (
+        <div className="flex justify-center py-24"><Spinner /></div>
+      )}
 
-      {!loading && !error && vehicles.length === 0 && (
-        <div style={{ textAlign: "center", color: "#9ca3af", padding: "60px 0" }}>
-          Todavía no tenés vehículos. <Link to="/vehicles/new">Agregá el primero.</Link>
+      {!loading && vehicles.length === 0 && (
+        <div className="text-center py-24 text-gray-400">
+          Todavía no tenés vehículos.{" "}
+          <Link to="/vehicles/new" className="text-blue-600 hover:underline">Agregá el primero.</Link>
         </div>
       )}
 
       {!loading && vehicles.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
           {vehicles.map((v) => (
-            <div
-              key={v.id}
-              style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "14px 18px", background: "#fff", display: "flex", gap: 16, alignItems: "center" }}
-            >
-              <div style={{ width: 80, height: 60, borderRadius: 6, overflow: "hidden", flexShrink: 0, background: "#f3f4f6" }}>
-                {v.primary_image_url ? (
-                  <img src={v.primary_image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 11, color: "#9ca3af" }}>Sin img</div>
-                )}
+            <div key={v.id} className="flex items-center gap-4 px-4 py-3">
+              <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                {v.primary_image_url
+                  ? <img src={v.primary_image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  : <div className="flex items-center justify-center h-full text-xs text-gray-400">Sin img</div>
+                }
               </div>
 
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700 }}>{v.brand} {v.model} {v.year}</div>
-                <div style={{ fontSize: 13, color: "#6b7280" }}>{v.mileage.toLocaleString()} km · ${Number(v.price_resale).toLocaleString()}</div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 truncate">{v.brand} {v.model} {v.year}</p>
+                <p className="text-sm text-gray-500">{v.mileage.toLocaleString()} km · ${Number(v.price_resale).toLocaleString()}</p>
               </div>
+
+              <Badge tone={STATUS_TONE[v.status] ?? "gray"} className="hidden sm:inline-flex">
+                {STATUS_LABELS[v.status]}
+              </Badge>
 
               <select
                 value={v.status}
                 onChange={(e) => handleStatusChange(v.id, e.target.value as VehicleStatus)}
-                style={{ padding: "5px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+                className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {STATUS_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
 
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => navigate(`/vehicles/${v.id}`)} style={actionBtn("#f3f4f6", "#374151")}>Ver</button>
-                <button onClick={() => navigate(`/vehicles/${v.id}/edit`)} style={actionBtn("#eff6ff", "#2563eb")}>Editar</button>
-                <button onClick={() => handleDelete(v.id)} style={actionBtn("#fef2f2", "#dc2626")}>Eliminar</button>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/vehicles/${v.id}`)}>Ver</Button>
+                <Button variant="secondary" size="sm" onClick={() => navigate(`/vehicles/${v.id}/edit`)}>Editar</Button>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(v.id)}>Eliminar</Button>
               </div>
             </div>
           ))}
@@ -115,8 +125,4 @@ export function MyStock() {
       )}
     </div>
   );
-}
-
-function actionBtn(bg: string, color: string): React.CSSProperties {
-  return { padding: "6px 12px", background: bg, color, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 500 };
 }

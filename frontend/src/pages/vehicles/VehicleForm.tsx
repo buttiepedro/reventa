@@ -1,24 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { vehicleService } from "../../services/vehicleService";
-import type { VehicleCreate, FuelType, Transmission, VehicleCondition } from "../../types/vehicle";
+import { toast } from "sonner";
+import { vehicleService } from "@/services/vehicleService";
+import { Button } from "@/components/ui/Button";
+import { Input, Select } from "@/components/ui/Input";
+import { Spinner } from "@/components/ui/Spinner";
+import type { VehicleCreate, FuelType, Transmission, VehicleCondition } from "@/types/vehicle";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 const emptyForm: VehicleCreate = {
-  brand: "",
-  model: "",
-  year: CURRENT_YEAR,
-  version: "",
-  color: "",
-  mileage: 0,
-  fuel_type: "gasoline",
-  transmission: "manual",
-  condition: "used",
-  body_type: "",
-  price_resale: 0,
-  price_public: 0,
-  description: "",
+  brand: "", model: "", year: CURRENT_YEAR, version: "", color: "",
+  mileage: 0, fuel_type: "gasoline", transmission: "manual", condition: "used",
+  body_type: "", price_resale: 0, price_public: 0, description: "",
 };
 
 export function VehicleForm() {
@@ -29,35 +23,25 @@ export function VehicleForm() {
   const [form, setForm] = useState<VehicleCreate>(emptyForm);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit) return;
     vehicleService.get(id).then((v) => {
       setForm({
-        brand: v.brand,
-        model: v.model,
-        year: v.year,
-        version: v.version ?? "",
-        color: v.color,
-        mileage: v.mileage,
-        fuel_type: v.fuel_type,
-        transmission: v.transmission,
-        condition: v.condition,
-        body_type: v.body_type ?? "",
-        price_resale: v.price_resale,
-        price_public: v.price_public,
-        description: v.description ?? "",
+        brand: v.brand, model: v.model, year: v.year, version: v.version ?? "",
+        color: v.color, mileage: v.mileage, fuel_type: v.fuel_type,
+        transmission: v.transmission, condition: v.condition, body_type: v.body_type ?? "",
+        price_resale: v.price_resale, price_public: v.price_public, description: v.description ?? "",
       });
-    }).catch(() => setError("No se pudo cargar el vehículo.")).finally(() => setLoading(false));
+    }).catch(() => toast.error("No se pudo cargar el vehículo.")).finally(() => setLoading(false));
   }, [id, isEdit]);
 
-  const set = (key: keyof VehicleCreate, value: string | number) => setForm((f) => ({ ...f, [key]: value }));
+  const set = (key: keyof VehicleCreate, value: string | number) =>
+    setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
     try {
       const payload = {
         ...form,
@@ -67,117 +51,86 @@ export function VehicleForm() {
       };
       if (isEdit) {
         await vehicleService.update(id, payload);
+        toast.success("Vehículo actualizado.");
         navigate(`/vehicles/${id}`);
       } else {
         const created = await vehicleService.create(payload);
+        toast.success("Vehículo creado.");
         navigate(`/vehicles/${created.id}`);
       }
     } catch {
-      setError("Error al guardar el vehículo.");
+      toast.error("Error al guardar el vehículo.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div style={{ color: "#6b7280", padding: 40 }}>Cargando...</div>;
+  if (loading) return <div className="flex justify-center py-24"><Spinner /></div>;
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 0 60px" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>
+    <div className="max-w-2xl mx-auto pb-16">
+      <h1 className="text-2xl font-bold text-gray-900 mb-8">
         {isEdit ? "Editar vehículo" : "Nuevo vehículo"}
-      </h2>
+      </h1>
 
-      {error && <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 6, padding: "10px 14px", color: "#dc2626", marginBottom: 16 }}>{error}</div>}
-
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={row}>
-          <Field label="Marca *"><input required value={form.brand} onChange={(e) => set("brand", e.target.value)} style={input} /></Field>
-          <Field label="Modelo *"><input required value={form.model} onChange={(e) => set("model", e.target.value)} style={input} /></Field>
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Marca *" required value={form.brand} onChange={(e) => set("brand", e.target.value)} />
+          <Input label="Modelo *" required value={form.model} onChange={(e) => set("model", e.target.value)} />
         </div>
-        <div style={row}>
-          <Field label="Año *">
-            <input required type="number" min={1900} max={CURRENT_YEAR + 1} value={form.year} onChange={(e) => set("year", Number(e.target.value))} style={input} />
-          </Field>
-          <Field label="Versión"><input value={form.version ?? ""} onChange={(e) => set("version", e.target.value)} style={input} placeholder="XLE, SE, GT..." /></Field>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Año *" type="number" required min={1900} max={CURRENT_YEAR + 1}
+            value={form.year} onChange={(e) => set("year", Number(e.target.value))} />
+          <Input label="Versión" value={form.version ?? ""} onChange={(e) => set("version", e.target.value)} placeholder="XLE, SE, GT..." />
         </div>
-        <div style={row}>
-          <Field label="Color *"><input required value={form.color} onChange={(e) => set("color", e.target.value)} style={input} /></Field>
-          <Field label="Kilometraje *">
-            <input required type="number" min={0} value={form.mileage} onChange={(e) => set("mileage", Number(e.target.value))} style={input} />
-          </Field>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Color *" required value={form.color} onChange={(e) => set("color", e.target.value)} />
+          <Input label="Kilometraje *" type="number" required min={0}
+            value={form.mileage} onChange={(e) => set("mileage", Number(e.target.value))} />
         </div>
-        <div style={row}>
-          <Field label="Combustible *">
-            <select required value={form.fuel_type} onChange={(e) => set("fuel_type", e.target.value as FuelType)} style={input}>
-              <option value="gasoline">Nafta</option>
-              <option value="diesel">Diesel</option>
-              <option value="electric">Eléctrico</option>
-              <option value="hybrid">Híbrido</option>
-              <option value="gnc">GNC</option>
-            </select>
-          </Field>
-          <Field label="Transmisión *">
-            <select required value={form.transmission} onChange={(e) => set("transmission", e.target.value as Transmission)} style={input}>
-              <option value="manual">Manual</option>
-              <option value="automatic">Automático</option>
-            </select>
-          </Field>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Select label="Combustible *" required value={form.fuel_type} onChange={(e) => set("fuel_type", e.target.value as FuelType)}>
+            <option value="gasoline">Nafta</option>
+            <option value="diesel">Diesel</option>
+            <option value="electric">Eléctrico</option>
+            <option value="hybrid">Híbrido</option>
+            <option value="gnc">GNC</option>
+          </Select>
+          <Select label="Transmisión *" required value={form.transmission} onChange={(e) => set("transmission", e.target.value as Transmission)}>
+            <option value="manual">Manual</option>
+            <option value="automatic">Automático</option>
+          </Select>
         </div>
-        <div style={row}>
-          <Field label="Condición *">
-            <select required value={form.condition} onChange={(e) => set("condition", e.target.value as VehicleCondition)} style={input}>
-              <option value="new">Nuevo</option>
-              <option value="used">Usado</option>
-            </select>
-          </Field>
-          <Field label="Carrocería"><input value={form.body_type ?? ""} onChange={(e) => set("body_type", e.target.value)} placeholder="sedan, suv, pickup..." style={input} /></Field>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Select label="Condición *" required value={form.condition} onChange={(e) => set("condition", e.target.value as VehicleCondition)}>
+            <option value="new">Nuevo</option>
+            <option value="used">Usado</option>
+          </Select>
+          <Input label="Carrocería" value={form.body_type ?? ""} onChange={(e) => set("body_type", e.target.value)} placeholder="sedan, suv, pickup..." />
         </div>
-        <div style={row}>
-          <Field label="Precio reventa *">
-            <input required type="number" min={0} step="0.01" value={form.price_resale} onChange={(e) => set("price_resale", Number(e.target.value))} style={input} />
-          </Field>
-          <Field label="Precio público *">
-            <input required type="number" min={0} step="0.01" value={form.price_public} onChange={(e) => set("price_public", Number(e.target.value))} style={input} />
-          </Field>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Precio reventa *" type="number" required min={0} step="0.01"
+            value={form.price_resale} onChange={(e) => set("price_resale", Number(e.target.value))} />
+          <Input label="Precio público *" type="number" required min={0} step="0.01"
+            value={form.price_public} onChange={(e) => set("price_public", Number(e.target.value))} />
         </div>
-        <Field label="Descripción">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">Descripción</label>
           <textarea
             value={form.description ?? ""}
             onChange={(e) => set("description", e.target.value)}
             rows={3}
-            style={{ ...input, resize: "vertical" }}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
           />
-        </Field>
+        </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{ padding: "10px 24px", background: saving ? "#9ca3af" : "#2563eb", color: "#fff", border: "none", borderRadius: 6, cursor: saving ? "not-allowed" : "pointer", fontWeight: 600, fontSize: 14 }}
-          >
-            {saving ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear vehículo"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            style={{ padding: "10px 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, cursor: "pointer", fontSize: 14 }}
-          >
-            Cancelar
-          </button>
+        <div className="flex gap-3 pt-2">
+          <Button type="submit" loading={saving}>
+            {isEdit ? "Guardar cambios" : "Crear vehículo"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Cancelar</Button>
         </div>
       </form>
     </div>
   );
 }
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-      <label style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-const row: React.CSSProperties = { display: "flex", gap: 16 };
-const input: React.CSSProperties = { padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, width: "100%", boxSizing: "border-box" };

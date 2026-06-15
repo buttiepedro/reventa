@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { VehicleListItem } from "../../types/vehicle";
+import type { VehicleListItem } from "@/types/vehicle";
 
 const STATUS_LABELS: Record<string, string> = {
   available: "Disponible",
@@ -7,10 +7,10 @@ const STATUS_LABELS: Record<string, string> = {
   sold: "Vendido",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  available: "#16a34a",
-  reserved: "#d97706",
-  sold: "#dc2626",
+const STATUS_CLASSES: Record<string, string> = {
+  available: "bg-green-100 text-green-800",
+  reserved: "bg-yellow-100 text-yellow-800",
+  sold: "bg-red-100 text-red-800",
 };
 
 const FUEL_LABELS: Record<string, string> = {
@@ -27,95 +27,62 @@ interface Props {
 
 export function VehicleCard({ vehicle }: Props) {
   return (
-    <Link
-      to={`/vehicles/${vehicle.id}`}
-      style={{ textDecoration: "none", color: "inherit" }}
-    >
-      <div
-        style={{
-          border: vehicle.is_favorite_company ? "2px solid #2563eb" : "1px solid #e5e7eb",
-          borderRadius: 8,
-          overflow: "hidden",
-          background: "#fff",
-          transition: "box-shadow 0.15s",
-          cursor: "pointer",
-        }}
-        onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 12px rgba(0,0,0,0.12)")}
-        onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.boxShadow = "none")}
-      >
-        <div style={{ position: "relative", height: 180, background: "#f3f4f6" }}>
+    <Link to={`/vehicles/${vehicle.id}`} className="block group">
+      <div className={`bg-white rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-shadow ${
+        vehicle.is_favorite_company ? "ring-2 ring-blue-500" : "border border-gray-100"
+      }`}>
+        {/* Image */}
+        <div className="relative aspect-video bg-gray-100">
           {vehicle.primary_image_url ? (
             <img
               src={vehicle.primary_image_url}
               alt={`${vehicle.brand} ${vehicle.model}`}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              className="w-full h-full object-cover"
+              loading="lazy"
             />
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", fontSize: 14 }}>
-              Sin imagen
-            </div>
+            <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sin imagen</div>
           )}
-          <span
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              background: STATUS_COLORS[vehicle.status] ?? "#6b7280",
-              color: "#fff",
-              padding: "2px 8px",
-              borderRadius: 12,
-              fontSize: 11,
-              fontWeight: 600,
-            }}
-          >
+          <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_CLASSES[vehicle.status] ?? "bg-gray-100 text-gray-700"}`}>
             {STATUS_LABELS[vehicle.status] ?? vehicle.status}
           </span>
           {vehicle.is_favorite_company && (
-            <span
-              style={{
-                position: "absolute",
-                top: 8,
-                left: 8,
-                background: "#2563eb",
-                color: "#fff",
-                padding: "2px 8px",
-                borderRadius: 12,
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
+            <span className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
               ★ Favorita
             </span>
           )}
         </div>
 
-        <div style={{ padding: "12px 14px" }}>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>
-            {vehicle.brand} {vehicle.model} {vehicle.year}
-          </div>
+        {/* Info */}
+        <div className="p-3.5">
+          <p className="font-bold text-gray-900 text-base leading-tight">
+            {vehicle.brand} {vehicle.model} <span className="font-normal text-gray-500">{vehicle.year}</span>
+          </p>
           {vehicle.version && (
-            <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>{vehicle.version}</div>
+            <p className="text-xs text-gray-500 mt-0.5">{vehicle.version}</p>
           )}
-          <div style={{ color: "#374151", fontSize: 13, marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div className="flex gap-2 flex-wrap mt-2 text-xs text-gray-600">
             <span>{vehicle.mileage.toLocaleString()} km</span>
+            <span>·</span>
             <span>{FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type}</span>
+            <span>·</span>
             <span>{vehicle.transmission === "manual" ? "Manual" : "Automático"}</span>
           </div>
-          <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div className="flex justify-between items-end mt-3">
             <div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Reventa</div>
-              <div style={{ fontWeight: 700, fontSize: 16, color: "#1d4ed8" }}>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Reventa</p>
+              <p className="font-bold text-blue-600 text-lg leading-none">
                 ${Number(vehicle.price_resale).toLocaleString()}
-              </div>
+              </p>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Público</div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: "#374151" }}>
+            <div className="text-right">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Público</p>
+              <p className="font-semibold text-gray-700 text-sm">
                 ${Number(vehicle.price_public).toLocaleString()}
-              </div>
+              </p>
             </div>
           </div>
-          <div style={{ marginTop: 8, fontSize: 12, color: "#9ca3af" }}>{vehicle.company_name}</div>
+          <p className="text-xs text-gray-400 mt-2">{vehicle.company_name}</p>
         </div>
       </div>
     </Link>
