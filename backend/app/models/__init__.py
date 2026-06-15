@@ -1,5 +1,6 @@
 from app.models.company import Company
 from app.models.company_favorite import CompanyFavorite
+from app.models.sheet_config import CompanySheetConfig
 from app.models.user import Role, User
 from app.models.vehicle import FuelType, Transmission, Vehicle, VehicleCondition, VehicleStatus
 from app.models.vehicle_image import VehicleImage
@@ -7,6 +8,7 @@ from app.models.vehicle_image import VehicleImage
 __all__ = [
     "Company",
     "CompanyFavorite",
+    "CompanySheetConfig",
     "FuelType",
     "Role",
     "Transmission",

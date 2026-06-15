@@ -16,6 +16,7 @@ import { VehicleDetail } from "@/pages/vehicles/VehicleDetail";
 import { PublicShare } from "@/pages/vehicles/PublicShare";
 import { Favorites } from "@/pages/favorites/Favorites";
 import { ChangePassword } from "@/pages/profile/ChangePassword";
+import { SheetSync } from "@/pages/vehicles/SheetSync";
 
 const COMPANY_ROLES = ["company_admin", "company_user"] as const;
 const ALL_ROLES = ["super_admin", ...COMPANY_ROLES] as const;
@@ -58,6 +59,7 @@ export function App() {
             <Route path="/vehicles" element={<Protected roles={COMPANY_ROLES}><NetworkCatalog /></Protected>} />
             <Route path="/vehicles/my" element={<Protected roles={COMPANY_ROLES}><MyStock /></Protected>} />
             <Route path="/vehicles/new" element={<Protected roles={COMPANY_ROLES}><VehicleForm /></Protected>} />
+            <Route path="/vehicles/sheet-sync" element={<Protected roles={COMPANY_ROLES}><SheetSync /></Protected>} />
             <Route path="/vehicles/:id" element={<Protected roles={COMPANY_ROLES}><VehicleDetail /></Protected>} />
             <Route path="/vehicles/:id/edit" element={<Protected roles={COMPANY_ROLES}><VehicleForm /></Protected>} />
             <Route path="/favorites" element={<Protected roles={COMPANY_ROLES}><Favorites /></Protected>} />

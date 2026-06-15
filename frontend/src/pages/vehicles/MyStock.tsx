@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { vehicleService } from "@/services/vehicleService";
+import { sheetService, type SyncResult } from "@/services/sheetService";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
 import type { VehicleListItem, VehicleStatus } from "@/types/vehicle";
+import type { ApiError } from "@/types";
 
 const STATUS_LABELS: Record<string, string> = {
   available: "Disponible",
@@ -29,11 +31,18 @@ export function MyStock() {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<VehicleListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasSheet, setHasSheet] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      setVehicles(await vehicleService.listMy());
+      const [vehicleList, sheetConfig] = await Promise.all([
+        vehicleService.listMy(),
+        sheetService.getConfig().catch(() => null),
+      ]);
+      setVehicles(vehicleList);
+      setHasSheet(!!sheetConfig);
     } catch {
       toast.error("Error al cargar tu stock.");
     } finally {
@@ -42,6 +51,27 @@ export function MyStock() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleQuickSync = async () => {
+    setSyncing(true);
+    try {
+      const result: SyncResult = await sheetService.sync();
+      const parts = [];
+      if (result.created) parts.push(`${result.created} creados`);
+      if (result.updated) parts.push(`${result.updated} actualizados`);
+      if (result.skipped) parts.push(`${result.skipped} omitidos`);
+      if (result.errors.length === 0) {
+        toast.success(`Sincronización completa: ${parts.join(" · ") || "sin cambios"}`);
+      } else {
+        toast.warning(`Sincronización con ${result.errors.length} error(es). ${parts.join(" · ")}`);
+      }
+      load();
+    } catch (err) {
+      toast.error((err as ApiError).detail ?? "Error al sincronizar.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("¿Eliminar este vehículo?")) return;
@@ -66,11 +96,21 @@ export function MyStock() {
 
   return (
     <div className="pb-10">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Mi stock</h1>
-        <Link to="/vehicles/new">
-          <Button>+ Nuevo vehículo</Button>
-        </Link>
+        <div className="flex gap-2">
+          {hasSheet && (
+            <Button variant="secondary" loading={syncing} onClick={handleQuickSync}>
+              Sincronizar hoja
+            </Button>
+          )}
+          <Button variant="secondary" onClick={() => navigate("/vehicles/sheet-sync")}>
+            {hasSheet ? "Configurar hoja" : "Vincular hoja"}
+          </Button>
+          <Link to="/vehicles/new">
+            <Button>+ Nuevo vehículo</Button>
+          </Link>
+        </div>
       </div>
 
       {loading && (
