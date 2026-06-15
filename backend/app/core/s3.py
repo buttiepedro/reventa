@@ -38,12 +38,29 @@ def _sync_generate_view_url(s3_key: str) -> str:
     )
 
 
+_CORS_CONFIG = {
+    "CORSRules": [
+        {
+            "AllowedHeaders": ["*"],
+            "AllowedMethods": ["GET", "PUT", "HEAD", "DELETE"],
+            "AllowedOrigins": ["*"],
+            "ExposeHeaders": ["ETag"],
+            "MaxAgeSeconds": 3600,
+        }
+    ]
+}
+
+
 def _sync_ensure_bucket() -> None:
     client = _client()
     try:
         client.head_bucket(Bucket=settings.s3_bucket)
     except Exception:
         client.create_bucket(Bucket=settings.s3_bucket)
+    try:
+        client.put_bucket_cors(Bucket=settings.s3_bucket, CORSConfiguration=_CORS_CONFIG)
+    except Exception:
+        pass  # non-fatal if CORS write fails (e.g. insufficient IAM permissions)
 
 
 async def generate_upload_url(s3_key: str, content_type: str) -> str:
