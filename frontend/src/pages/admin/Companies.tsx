@@ -15,8 +15,8 @@ export function Companies() {
     try {
       const data = await api.get<Company[]>("/companies");
       setCompanies(data);
-    } catch {
-      // silently keep whatever companies are already loaded
+    } catch (err) {
+      setError(`Error loading companies: ${(err as ApiError).detail ?? "unknown"}`);
     }
   }, []);
 
