@@ -17,10 +17,7 @@ export function ImageUploader({ vehicleId, onUploaded }: Props) {
     setError(null);
     try {
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const { upload_url, s3_key } = await vehicleService.getUploadUrl(vehicleId, file.name, file.type);
-        await vehicleService.uploadToS3(upload_url, file);
-        await vehicleService.registerImage(vehicleId, s3_key, i, i === 0);
+        await vehicleService.uploadImage(vehicleId, files[i], i, i === 0);
       }
       onUploaded();
     } catch {

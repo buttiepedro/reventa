@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session
@@ -149,6 +149,20 @@ async def get_image_upload_url(
     is_super = current_user.role == Role.SUPER_ADMIN
     company_id = current_user.company_id or uuid.uuid4()
     return await VehicleImageService(session).get_upload_url(vehicle_id, company_id, filename, content_type, is_super)
+
+
+@router.post("/{vehicle_id}/images/upload", response_model=VehicleImageRead, status_code=status.HTTP_201_CREATED)
+async def upload_image(
+    vehicle_id: uuid.UUID,
+    file: UploadFile = File(...),
+    display_order: int = 0,
+    is_primary: bool = False,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    is_super = current_user.role == Role.SUPER_ADMIN
+    company_id = current_user.company_id or uuid.uuid4()
+    return await VehicleImageService(session).upload_image(vehicle_id, company_id, file, display_order, is_primary, is_super)
 
 
 @router.post("/{vehicle_id}/images", response_model=VehicleImageRead, status_code=status.HTTP_201_CREATED)

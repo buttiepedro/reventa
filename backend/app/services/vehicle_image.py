@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import s3
@@ -57,6 +57,29 @@ class VehicleImageService:
             self._assert_owner(vehicle.company_id, company_id, is_super_admin)
         await s3.delete_object(image.s3_key)
         await self.repo.delete(image)
+
+    async def upload_image(
+        self, vehicle_id: uuid.UUID, company_id: uuid.UUID, file: UploadFile, display_order: int, is_primary: bool, is_super_admin: bool = False
+    ) -> VehicleImageRead:
+        vehicle = await self.vehicle_repo.get_by_id(vehicle_id)
+        if not vehicle:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
+        self._assert_owner(vehicle.company_id, company_id, is_super_admin)
+
+        content_type = file.content_type or "image/jpeg"
+        ext = (file.filename or "img").rsplit(".", 1)[-1].lower()
+        s3_key = f"vehicles/{vehicle_id}/{uuid.uuid4()}.{ext}"
+
+        data = await file.read()
+        await s3.upload_fileobj(s3_key, data, content_type)
+
+        if is_primary:
+            await self.repo.clear_primary(vehicle_id)
+
+        image = VehicleImage(vehicle_id=vehicle_id, s3_key=s3_key, display_order=display_order, is_primary=is_primary)
+        saved = await self.repo.save(image)
+        url = await s3.generate_view_url(saved.s3_key)
+        return VehicleImageRead(id=saved.id, s3_key=saved.s3_key, url=url, display_order=saved.display_order, is_primary=saved.is_primary)
 
     async def set_primary(self, image_id: uuid.UUID, vehicle_id: uuid.UUID, company_id: uuid.UUID, is_super_admin: bool = False) -> VehicleImageRead:
         image = await self.repo.get_by_id(image_id)

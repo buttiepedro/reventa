@@ -67,6 +67,18 @@ async def generate_upload_url(s3_key: str, content_type: str) -> str:
     return await asyncio.to_thread(_sync_generate_upload_url, s3_key, content_type)
 
 
+async def upload_fileobj(s3_key: str, data: bytes, content_type: str) -> None:
+    import io
+    await asyncio.to_thread(
+        lambda: _client().upload_fileobj(
+            io.BytesIO(data),
+            settings.s3_bucket,
+            s3_key,
+            ExtraArgs={"ContentType": content_type},
+        )
+    )
+
+
 async def generate_view_url(s3_key: str) -> str:
     return await asyncio.to_thread(_sync_generate_view_url, s3_key)
 

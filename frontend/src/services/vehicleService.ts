@@ -68,6 +68,26 @@ export const vehicleService = {
 
   removeFavorite: (companyId: string): Promise<void> => api.delete(`/favorites/${companyId}`),
 
+  uploadImage: async (vehicleId: string, file: File, displayOrder: number, isPrimary: boolean): Promise<VehicleImage> => {
+    const token = localStorage.getItem("access_token");
+    const BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
+    const form = new FormData();
+    form.append("file", file);
+    const resp = await fetch(
+      `${BASE_URL}/vehicles/${vehicleId}/images/upload?display_order=${displayOrder}&is_primary=${isPrimary}`,
+      {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      }
+    );
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: "Upload failed" }));
+      throw { detail: err.detail ?? "Upload failed", status: resp.status };
+    }
+    return resp.json();
+  },
+
   uploadToS3: async (uploadUrl: string, file: File): Promise<void> => {
     const resp = await fetch(uploadUrl, {
       method: "PUT",
