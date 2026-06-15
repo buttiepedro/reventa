@@ -17,6 +17,7 @@ import { PublicShare } from "@/pages/vehicles/PublicShare";
 import { Favorites } from "@/pages/favorites/Favorites";
 import { ChangePassword } from "@/pages/profile/ChangePassword";
 import { SheetSync } from "@/pages/vehicles/SheetSync";
+import { Catalog } from "@/pages/admin/Catalog";
 
 const COMPANY_ROLES = ["company_admin", "company_user"] as const;
 const ALL_ROLES = ["super_admin", ...COMPANY_ROLES] as const;
@@ -48,6 +49,7 @@ export function App() {
                     <Routes>
                       <Route path="companies" element={<Companies />} />
                       <Route path="companies/:id" element={<CompanyDetail />} />
+                      <Route path="catalog" element={<Catalog />} />
                       <Route path="*" element={<Navigate to="companies" replace />} />
                     </Routes>
                   </Layout>

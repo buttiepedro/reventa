@@ -1,3 +1,4 @@
+from app.models.catalog import VehicleMake, VehicleModel, VehicleTrim
 from app.models.company import Company
 from app.models.company_favorite import CompanyFavorite
 from app.models.sheet_config import CompanySheetConfig
@@ -14,6 +15,9 @@ __all__ = [
     "Transmission",
     "User",
     "Vehicle",
+    "VehicleMake",
+    "VehicleModel",
+    "VehicleTrim",
     "VehicleCondition",
     "VehicleImage",
     "VehicleStatus",

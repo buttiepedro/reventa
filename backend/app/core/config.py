@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     s3_bucket: str = "reventa-vehicles"
     s3_endpoint_url: str | None = None
 
+    # carapi.app — optional, for vehicle catalog sync
+    carapi_username: str = ""
+    carapi_api_token: str = ""
+
     # Comma-separated list of allowed CORS origins
     cors_origins: str = "http://localhost:5173"
 

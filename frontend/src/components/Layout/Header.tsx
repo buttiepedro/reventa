@@ -43,7 +43,10 @@ export function Header() {
               </>
             )}
             {isSuperAdmin && (
-              <NavLink to="/admin/companies" className={navLinkClass}>Empresas</NavLink>
+              <>
+                <NavLink to="/admin/companies" className={navLinkClass}>Empresas</NavLink>
+                <NavLink to="/admin/catalog" className={navLinkClass}>Catálogo</NavLink>
+              </>
             )}
           </nav>
 
@@ -113,7 +116,10 @@ export function Header() {
             </>
           )}
           {isSuperAdmin && (
-            <NavLink to="/admin/companies" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Empresas</NavLink>
+            <>
+              <NavLink to="/admin/companies" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Empresas</NavLink>
+              <NavLink to="/admin/catalog" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Catálogo</NavLink>
+            </>
           )}
           <hr className="border-gray-100" />
           <Link to="/profile/password" className="text-sm text-gray-700" onClick={() => setMobileNavOpen(false)}>
