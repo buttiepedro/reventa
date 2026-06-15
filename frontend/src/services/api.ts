@@ -13,7 +13,11 @@ async function request<T>(endpoint: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
-    throw { detail: error.detail ?? "Request failed", status: response.status };
+    const raw = error.detail;
+    const detail = Array.isArray(raw)
+      ? raw.map((e: { msg?: string }) => e.msg ?? String(e)).join(" · ")
+      : (raw ?? "Request failed");
+    throw { detail, status: response.status };
   }
 
   if (response.status === 204) return undefined as T;

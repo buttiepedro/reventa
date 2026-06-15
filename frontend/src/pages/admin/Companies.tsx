@@ -12,8 +12,12 @@ export function Companies() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadCompanies = useCallback(async () => {
-    const data = await api.get<Company[]>("/companies");
-    setCompanies(data);
+    try {
+      const data = await api.get<Company[]>("/companies");
+      setCompanies(data);
+    } catch {
+      // silently keep whatever companies are already loaded
+    }
   }, []);
 
   useEffect(() => {
