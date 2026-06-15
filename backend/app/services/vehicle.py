@@ -24,8 +24,9 @@ class VehicleService:
             url = await s3.generate_view_url(img.s3_key)
             images.append({"id": img.id, "s3_key": img.s3_key, "url": url, "display_order": img.display_order, "is_primary": img.is_primary})
 
+        _SKIP = {"images", "company"}
         return VehicleRead(
-            **{k: v for k, v in vehicle.__dict__.items() if not k.startswith("_")},
+            **{k: v for k, v in vehicle.__dict__.items() if not k.startswith("_") and k not in _SKIP},
             company_name=company_name,
             images=images,
             is_favorite_company=vehicle.company_id in favorite_ids,
@@ -58,7 +59,7 @@ class VehicleService:
             primary_url = await s3.generate_view_url(primary.s3_key) if primary else None
             items.append(
                 VehicleListItem(
-                    **{k: val for k, val in v.__dict__.items() if not k.startswith("_")},
+                    **{k: val for k, val in v.__dict__.items() if not k.startswith("_") and k not in {"images", "company"}},
                     company_name=v.company.name,
                     primary_image_url=primary_url,
                     is_favorite_company=v.company_id in fav_ids,
@@ -82,7 +83,7 @@ class VehicleService:
             primary_url = await s3.generate_view_url(primary.s3_key) if primary else None
             items.append(
                 VehicleListItem(
-                    **{k: val for k, val in v.__dict__.items() if not k.startswith("_")},
+                    **{k: val for k, val in v.__dict__.items() if not k.startswith("_") and k not in {"images", "company"}},
                     company_name=v.company.name,
                     primary_image_url=primary_url,
                     is_favorite_company=False,
