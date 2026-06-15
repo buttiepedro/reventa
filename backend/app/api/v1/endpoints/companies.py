@@ -15,7 +15,7 @@ router = APIRouter()
 
 @router.get("", response_model=list[CompanyRead])
 async def list_companies(
-    _: User = Depends(require_super_admin),
+    _: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     return await CompanyService(session).get_all()
