@@ -1,7 +1,7 @@
 export type FuelType = "gasoline" | "diesel" | "electric" | "hybrid" | "gnc";
 export type Transmission = "manual" | "automatic";
 export type VehicleCondition = "new" | "used";
-export type VehicleStatus = "available" | "reserved" | "sold";
+export type VehicleStatus = "available" | "reserved" | "sold" | "pre_toma";
 
 export interface VehicleImage {
   id: string;
@@ -107,6 +107,7 @@ export interface VehicleCreate {
   price_resale: number;
   price_public: number;
   description?: string;
+  status?: VehicleStatus;
 }
 
 export type VehicleUpdate = Partial<VehicleCreate>;

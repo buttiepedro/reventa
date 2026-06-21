@@ -68,6 +68,15 @@ export const vehicleService = {
 
   removeFavorite: (companyId: string): Promise<void> => api.delete(`/favorites/${companyId}`),
 
+  listPreToma: (): Promise<VehicleListItem[]> => api.get("/vehicles/pre-toma"),
+
+  addInterest: (vehicleId: string): Promise<void> => api.post(`/vehicles/${vehicleId}/interest`, {}),
+
+  removeInterest: (vehicleId: string): Promise<void> => api.delete(`/vehicles/${vehicleId}/interest`),
+
+  listInterests: (vehicleId: string): Promise<{ company_id: string; company_name: string; created_at: string }[]> =>
+    api.get(`/vehicles/${vehicleId}/interests`),
+
   uploadImage: async (vehicleId: string, file: File, displayOrder: number, isPrimary: boolean): Promise<VehicleImage> => {
     const token = localStorage.getItem("access_token");
     const BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";

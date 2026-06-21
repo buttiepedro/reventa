@@ -6,7 +6,7 @@ import { catalogService, type CatalogMake, type CatalogModel, type CatalogTrim }
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
-import type { VehicleCreate, FuelType, Transmission, VehicleCondition } from "@/types/vehicle";
+import type { VehicleCreate, FuelType, Transmission, VehicleCondition, VehicleStatus } from "@/types/vehicle";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const CUSTOM = "__custom__";
@@ -14,7 +14,7 @@ const CUSTOM = "__custom__";
 const emptyForm: VehicleCreate = {
   brand: "", model: "", year: CURRENT_YEAR, version: "", color: "",
   mileage: 0, fuel_type: "gasoline", transmission: "manual", condition: "used",
-  body_type: "", price_resale: 0, price_public: 0, description: "",
+  body_type: "", price_resale: 0, price_public: 0, description: "", status: "available",
 };
 
 export function VehicleForm() {
@@ -62,6 +62,7 @@ export function VehicleForm() {
         color: v.color, mileage: v.mileage, fuel_type: v.fuel_type,
         transmission: v.transmission, condition: v.condition, body_type: v.body_type ?? "",
         price_resale: v.price_resale, price_public: v.price_public, description: v.description ?? "",
+        status: v.status,
       });
 
       // Try to pre-select catalog entries
@@ -303,6 +304,25 @@ export function VehicleForm() {
             <option value="used">Usado</option>
           </Select>
           <Input label="Carrocería" value={form.body_type ?? ""} onChange={(e) => set("body_type", e.target.value)} placeholder="sedan, suv, pickup..." />
+        </div>
+
+        {/* Status */}
+        <div className="flex flex-col gap-1">
+          <Select
+            label="Estado"
+            value={form.status ?? "available"}
+            onChange={(e) => set("status", e.target.value as VehicleStatus)}
+          >
+            <option value="available">Disponible (visible en la red)</option>
+            <option value="reserved">Reservado</option>
+            <option value="sold">Vendido</option>
+            <option value="pre_toma">Pre Toma (solo visible para tus conectadas)</option>
+          </Select>
+          {form.status === "pre_toma" && (
+            <p className="text-xs text-purple-600 bg-purple-50 rounded-lg px-3 py-2">
+              Este vehículo solo será visible para las concesionarias con las que estás conectado. Si ninguna acepta, podés publicarlo en la red más adelante.
+            </p>
+          )}
         </div>
 
         {/* Prices */}

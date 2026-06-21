@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, func
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,5 +16,11 @@ class CompanyFavorite(Base):
     )
     favorite_company_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), primary_key=True
+    )
+    # "pending" = request sent, "accepted" = confirmed connection
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="accepted")
+    # who initiated the request (always equals company_id for existing/new records)
+    requested_by_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

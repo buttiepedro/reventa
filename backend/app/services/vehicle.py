@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import s3
+from app.models.notification import Notification
 from app.models.vehicle import Vehicle, VehicleStatus
 from app.repositories.company_favorite import CompanyFavoriteRepository
 from app.repositories.vehicle import VehicleRepository
@@ -17,6 +18,7 @@ class VehicleService:
         self.repo = VehicleRepository(session)
         self.image_repo = VehicleImageRepository(session)
         self.fav_repo = CompanyFavoriteRepository(session)
+        self.session = session
 
     async def _build_read(self, vehicle: Vehicle, company_name: str, favorite_ids: list[uuid.UUID]) -> VehicleRead:
         images = []
@@ -32,9 +34,26 @@ class VehicleService:
             is_favorite_company=vehicle.company_id in favorite_ids,
         )
 
+    async def _notify_favorites_pre_toma(self, vehicle: Vehicle) -> None:
+        confirmed_ids = await self.fav_repo.get_confirmed_ids(vehicle.company_id)
+        for company_id in confirmed_ids:
+            notif = Notification(
+                company_id=company_id,
+                title=f"Pre toma disponible: {vehicle.brand} {vehicle.model} {vehicle.year}",
+                body="Una concesionaria conectada tiene un vehículo en pre toma. ¡Revisalo y marcá tu interés!",
+                entity_type="pre_toma",
+                entity_id=vehicle.id,
+            )
+            self.session.add(notif)
+        if confirmed_ids:
+            await self.session.flush()
+
     async def create(self, company_id: uuid.UUID, data: VehicleCreate) -> Vehicle:
         vehicle = Vehicle(company_id=company_id, **data.model_dump())
-        return await self.repo.save(vehicle)
+        saved = await self.repo.save(vehicle)
+        if saved.status == VehicleStatus.PRE_TOMA:
+            await self._notify_favorites_pre_toma(saved)
+        return saved
 
     async def get_or_404(self, vehicle_id: uuid.UUID) -> Vehicle:
         v = await self.repo.get_by_id(vehicle_id)
@@ -91,6 +110,27 @@ class VehicleService:
             )
         return items
 
+    async def get_pre_toma_for_company(self, company_id: uuid.UUID) -> list[VehicleListItem]:
+        """Returns pre_toma vehicles from confirmed favorites of company_id."""
+        confirmed_ids = await self.fav_repo.get_confirmed_ids(company_id)
+        if not confirmed_ids:
+            return []
+        vehicles = await self.repo.get_pre_toma_by_companies(confirmed_ids)
+        items = []
+        for v in vehicles:
+            await self.repo.session.refresh(v, ["images", "company"])
+            primary = next((img for img in v.images if img.is_primary), v.images[0] if v.images else None)
+            primary_url = await s3.generate_view_url(primary.s3_key) if primary else None
+            items.append(
+                VehicleListItem(
+                    **{k: val for k, val in v.__dict__.items() if not k.startswith("_") and k not in {"images", "company"}},
+                    company_name=v.company.name,
+                    primary_image_url=primary_url,
+                    is_favorite_company=True,
+                )
+            )
+        return items
+
     def _assert_owner(self, vehicle: Vehicle, company_id: uuid.UUID, is_super_admin: bool = False) -> None:
         if not is_super_admin and vehicle.company_id != company_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your vehicle")
@@ -98,15 +138,23 @@ class VehicleService:
     async def update(self, vehicle_id: uuid.UUID, company_id: uuid.UUID, data: VehicleUpdate, is_super_admin: bool = False) -> Vehicle:
         vehicle = await self.get_or_404(vehicle_id)
         self._assert_owner(vehicle, company_id, is_super_admin)
+        old_status = vehicle.status
         for field, value in data.model_dump(exclude_none=True).items():
             setattr(vehicle, field, value)
-        return await self.repo.save(vehicle)
+        saved = await self.repo.save(vehicle)
+        if saved.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
+            await self._notify_favorites_pre_toma(saved)
+        return saved
 
     async def update_status(self, vehicle_id: uuid.UUID, company_id: uuid.UUID, data: VehicleStatusUpdate, is_super_admin: bool = False) -> Vehicle:
         vehicle = await self.get_or_404(vehicle_id)
         self._assert_owner(vehicle, company_id, is_super_admin)
+        old_status = vehicle.status
         vehicle.status = data.status
-        return await self.repo.save(vehicle)
+        saved = await self.repo.save(vehicle)
+        if saved.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
+            await self._notify_favorites_pre_toma(saved)
+        return saved
 
     async def delete(self, vehicle_id: uuid.UUID, company_id: uuid.UUID, is_super_admin: bool = False) -> None:
         vehicle = await self.get_or_404(vehicle_id)

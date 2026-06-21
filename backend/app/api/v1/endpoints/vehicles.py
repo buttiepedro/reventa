@@ -1,11 +1,17 @@
 import uuid
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session
+from app.models.notification import Notification
+from app.models.pre_toma_interest import PreTomaInterest
 from app.models.user import Role, User
+from app.models.vehicle import VehicleStatus
 from app.schemas.vehicle import (
     PaginatedResponse,
     VehicleCreate,
@@ -20,6 +26,12 @@ from app.services.vehicle import VehicleService
 from app.services.vehicle_image import VehicleImageService
 
 router = APIRouter()
+
+
+class PreTomaInterestRead(BaseModel):
+    company_id: uuid.UUID
+    company_name: str
+    created_at: datetime
 
 
 # ─── Network listing ─────────────────────────────────────────
@@ -199,3 +211,89 @@ async def set_primary_image(
     is_super = current_user.role == Role.SUPER_ADMIN
     company_id = current_user.company_id or uuid.uuid4()
     return await VehicleImageService(session).set_primary(image_id, vehicle_id, company_id, is_super)
+
+
+# ─── Pre Toma ────────────────────────────────────────────────
+
+
+@router.get("/pre-toma", response_model=list[VehicleListItem])
+async def list_pre_toma(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
+    return await VehicleService(session).get_pre_toma_for_company(current_user.company_id)
+
+
+@router.post("/{vehicle_id}/interest", status_code=status.HTTP_201_CREATED)
+async def add_interest(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
+    vehicle = await VehicleService(session).get_or_404(vehicle_id)
+    if vehicle.status != VehicleStatus.PRE_TOMA:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vehicle is not in pre_toma status")
+    existing = await session.execute(
+        select(PreTomaInterest).where(
+            PreTomaInterest.vehicle_id == vehicle_id,
+            PreTomaInterest.company_id == current_user.company_id,
+        )
+    )
+    if existing.scalar_one_or_none():
+        return {"detail": "Ya marcaste interés"}
+    interest = PreTomaInterest(vehicle_id=vehicle_id, company_id=current_user.company_id)
+    session.add(interest)
+    # Notify vehicle owner
+    await session.refresh(vehicle, ["company"])
+    notif = Notification(
+        company_id=vehicle.company_id,
+        title=f"{vehicle.company.name if hasattr(vehicle, 'company') and vehicle.company else 'Una concesionaria'} está interesada en tu pre toma {vehicle.brand} {vehicle.model}",
+        entity_type="pre_toma_interest",
+        entity_id=vehicle_id,
+    )
+    session.add(notif)
+    return {"detail": "Interés registrado"}
+
+
+@router.delete("/{vehicle_id}/interest", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_interest(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
+    await session.execute(
+        delete(PreTomaInterest).where(
+            PreTomaInterest.vehicle_id == vehicle_id,
+            PreTomaInterest.company_id == current_user.company_id,
+        )
+    )
+
+
+@router.get("/{vehicle_id}/interests", response_model=list[PreTomaInterestRead])
+async def list_interests(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    vehicle = await VehicleService(session).get_or_404(vehicle_id)
+    company_id = current_user.company_id or uuid.uuid4()
+    if current_user.role != Role.SUPER_ADMIN and vehicle.company_id != company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your vehicle")
+    result = await session.execute(
+        select(PreTomaInterest).where(PreTomaInterest.vehicle_id == vehicle_id)
+    )
+    interests = result.scalars().all()
+    from app.repositories.company import CompanyRepository
+    company_repo = CompanyRepository(session)
+    out = []
+    for i in interests:
+        c = await company_repo.get_by_id(i.company_id)
+        if c:
+            out.append(PreTomaInterestRead(company_id=i.company_id, company_name=c.name, created_at=i.created_at))
+    return out

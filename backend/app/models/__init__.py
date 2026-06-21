@@ -1,6 +1,8 @@
 from app.models.catalog import VehicleMake, VehicleModel, VehicleTrim
 from app.models.company import Company
 from app.models.company_favorite import CompanyFavorite
+from app.models.notification import Notification
+from app.models.pre_toma_interest import PreTomaInterest
 from app.models.sheet_config import CompanySheetConfig
 from app.models.user import Role, User
 from app.models.vehicle import FuelType, Transmission, Vehicle, VehicleCondition, VehicleStatus
@@ -11,6 +13,8 @@ __all__ = [
     "CompanyFavorite",
     "CompanySheetConfig",
     "FuelType",
+    "Notification",
+    "PreTomaInterest",
     "Role",
     "Transmission",
     "User",

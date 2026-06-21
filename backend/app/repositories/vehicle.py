@@ -22,6 +22,14 @@ class VehicleRepository(BaseRepository[Vehicle]):
         )
         return list(result.scalars().all())
 
+    async def get_pre_toma_by_companies(self, company_ids: list[uuid.UUID]) -> list[Vehicle]:
+        result = await self.session.execute(
+            select(Vehicle)
+            .where(Vehicle.status == VehicleStatus.PRE_TOMA, Vehicle.company_id.in_(company_ids))
+            .order_by(Vehicle.created_at.desc())
+        )
+        return list(result.scalars().all())
+
     async def get_network_list(
         self,
         current_company_id: uuid.UUID,

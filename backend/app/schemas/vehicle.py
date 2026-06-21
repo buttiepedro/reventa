@@ -33,6 +33,7 @@ class VehicleCreate(BaseModel):
     price_resale: Decimal
     price_public: Decimal
     description: str | None = None
+    status: VehicleStatus = VehicleStatus.AVAILABLE
 
     @field_validator("year")
     @classmethod
@@ -63,6 +64,7 @@ class VehicleUpdate(BaseModel):
     price_resale: Decimal | None = None
     price_public: Decimal | None = None
     description: str | None = None
+    status: VehicleStatus | None = None
 
 
 class VehicleStatusUpdate(BaseModel):

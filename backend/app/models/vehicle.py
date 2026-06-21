@@ -32,6 +32,7 @@ class VehicleStatus(str, PyEnum):
     AVAILABLE = "available"
     RESERVED = "reserved"
     SOLD = "sold"
+    PRE_TOMA = "pre_toma"
 
 
 class Vehicle(Base):
