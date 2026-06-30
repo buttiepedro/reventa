@@ -4,9 +4,22 @@ from typing import Sequence
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.company import Company
 from app.models.vehicle import Vehicle, VehicleStatus
 from app.repositories.base import BaseRepository
 from app.schemas.vehicle import VehicleFilters
+
+
+def _haversine_km(lat1: float, lon1: float, lat2_col, lon2_col):
+    dlat = func.radians(lat2_col - lat1)
+    dlon = func.radians(lon2_col - lon1)
+    a = (
+        func.power(func.sin(dlat / 2.0), 2)
+        + func.cos(func.radians(lat1))
+        * func.cos(func.radians(lat2_col))
+        * func.power(func.sin(dlon / 2.0), 2)
+    )
+    return 6371.0 * 2.0 * func.asin(func.sqrt(a))
 
 
 class VehicleRepository(BaseRepository[Vehicle]):
@@ -35,8 +48,14 @@ class VehicleRepository(BaseRepository[Vehicle]):
         current_company_id: uuid.UUID,
         favorite_ids: Sequence[uuid.UUID],
         filters: VehicleFilters,
+        viewer_lat: float | None = None,
+        viewer_lng: float | None = None,
     ) -> tuple[list[Vehicle], int]:
+        use_geo = viewer_lat is not None and viewer_lng is not None
+
         stmt = select(Vehicle)
+        if use_geo:
+            stmt = stmt.join(Company, Vehicle.company_id == Company.id)
 
         if filters.status is not None:
             stmt = stmt.where(Vehicle.status == filters.status)
@@ -60,13 +79,15 @@ class VehicleRepository(BaseRepository[Vehicle]):
         count_result = await self.session.execute(select(func.count()).select_from(stmt.subquery()))
         total = count_result.scalar_one()
 
-        # Favorites first, then newest
-        is_favorite = case((Vehicle.company_id.in_(favorite_ids), 0), else_=1) if favorite_ids else case((Vehicle.id == Vehicle.id, 1), else_=1)  # noqa: E501
-        stmt = (
-            stmt.order_by(is_favorite, Vehicle.created_at.desc())
-            .offset((filters.page - 1) * filters.page_size)
-            .limit(filters.page_size)
-        )
+        # Favorites first; if viewer has geo → order by distance; else newest
+        is_fav = case((Vehicle.company_id.in_(favorite_ids), 0), else_=1) if favorite_ids else case((Vehicle.id == Vehicle.id, 1), else_=1)  # noqa: E501
+        if use_geo:
+            dist = _haversine_km(viewer_lat, viewer_lng, Company.lat, Company.lng)  # type: ignore[arg-type]
+            stmt = stmt.order_by(is_fav, dist.nulls_last(), Vehicle.created_at.desc())
+        else:
+            stmt = stmt.order_by(is_fav, Vehicle.created_at.desc())
+
+        stmt = stmt.offset((filters.page - 1) * filters.page_size).limit(filters.page_size)
 
         result = await self.session.execute(stmt)
         return list(result.scalars().all()), total

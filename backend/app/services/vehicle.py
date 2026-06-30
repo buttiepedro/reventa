@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import s3
+from app.models.company import Company
 from app.models.notification import Notification
 from app.models.vehicle import Vehicle, VehicleStatus
 from app.repositories.company_favorite import CompanyFavoriteRepository
@@ -76,7 +77,18 @@ class VehicleService:
 
     async def get_network_list(self, current_company_id: uuid.UUID, filters: VehicleFilters) -> PaginatedResponse[VehicleListItem]:
         fav_ids = await self.fav_repo.get_favorites(current_company_id)
-        vehicles, total = await self.repo.get_network_list(current_company_id, fav_ids, filters)
+
+        # Look up viewer's coordinates for geo-ordered results
+        row = (await self.session.execute(
+            select(Company.lat, Company.lng).where(Company.id == current_company_id)
+        )).one_or_none()
+        viewer_lat = float(row.lat) if row and row.lat is not None else None
+        viewer_lng = float(row.lng) if row and row.lng is not None else None
+
+        vehicles, total = await self.repo.get_network_list(
+            current_company_id, fav_ids, filters,
+            viewer_lat=viewer_lat, viewer_lng=viewer_lng,
+        )
 
         items = []
         for v in vehicles:
