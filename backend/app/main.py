@@ -8,7 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.database import AsyncSessionLocal
 from app.core.seed import seed_super_admin
+from app.services.vehicle import VehicleService
 
 
 def _run_migrations() -> None:
@@ -30,11 +32,29 @@ def _run_migrations() -> None:
     print("Migrations complete.", flush=True)
 
 
+async def _pretoma_expiry_loop() -> None:
+    while True:
+        await asyncio.sleep(3600)  # every hour
+        try:
+            async with AsyncSessionLocal() as session:
+                expired = await VehicleService.expire_pretoma_ttl(session)
+                if expired:
+                    print(f"[scheduler] Expired {expired} pre-toma vehicle(s).", flush=True)
+        except Exception as exc:
+            print(f"[scheduler] Pre-toma expiry error: {exc}", flush=True)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await asyncio.to_thread(_run_migrations)
     await seed_super_admin()
+    task = asyncio.create_task(_pretoma_expiry_loop())
     yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(

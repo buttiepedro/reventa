@@ -1,7 +1,9 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 from math import ceil
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import s3
@@ -48,8 +50,13 @@ class VehicleService:
         if confirmed_ids:
             await self.session.flush()
 
+    def _set_pretoma_expiry(self, vehicle: Vehicle) -> None:
+        vehicle.pre_toma_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+
     async def create(self, company_id: uuid.UUID, data: VehicleCreate) -> Vehicle:
         vehicle = Vehicle(company_id=company_id, **data.model_dump())
+        if vehicle.status == VehicleStatus.PRE_TOMA:
+            self._set_pretoma_expiry(vehicle)
         saved = await self.repo.save(vehicle)
         if saved.status == VehicleStatus.PRE_TOMA:
             await self._notify_favorites_pre_toma(saved)
@@ -141,6 +148,8 @@ class VehicleService:
         old_status = vehicle.status
         for field, value in data.model_dump(exclude_none=True).items():
             setattr(vehicle, field, value)
+        if vehicle.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
+            self._set_pretoma_expiry(vehicle)
         saved = await self.repo.save(vehicle)
         if saved.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
             await self._notify_favorites_pre_toma(saved)
@@ -151,6 +160,8 @@ class VehicleService:
         self._assert_owner(vehicle, company_id, is_super_admin)
         old_status = vehicle.status
         vehicle.status = data.status
+        if vehicle.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
+            self._set_pretoma_expiry(vehicle)
         saved = await self.repo.save(vehicle)
         if saved.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
             await self._notify_favorites_pre_toma(saved)
@@ -160,6 +171,24 @@ class VehicleService:
         vehicle = await self.get_or_404(vehicle_id)
         self._assert_owner(vehicle, company_id, is_super_admin)
         await self.repo.delete(vehicle)
+
+    @staticmethod
+    async def expire_pretoma_ttl(session: AsyncSession) -> int:
+        now = datetime.now(timezone.utc)
+        result = await session.execute(
+            select(Vehicle).where(
+                Vehicle.status == VehicleStatus.PRE_TOMA,
+                Vehicle.pre_toma_expires_at.isnot(None),
+                Vehicle.pre_toma_expires_at <= now,
+            )
+        )
+        expired = result.scalars().all()
+        for v in expired:
+            v.status = VehicleStatus.AVAILABLE
+            v.pre_toma_expires_at = None
+        if expired:
+            await session.commit()
+        return len(expired)
 
     async def get_public(self, share_token: uuid.UUID) -> dict:
         v = await self.repo.get_by_share_token(share_token)
