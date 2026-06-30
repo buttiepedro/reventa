@@ -14,7 +14,7 @@ const CUSTOM = "__custom__";
 const emptyForm: VehicleCreate = {
   brand: "", model: "", year: CURRENT_YEAR, version: "", color: "",
   mileage: 0, fuel_type: "gasoline", transmission: "manual", condition: "used",
-  body_type: "", price_resale: 0, price_public: 0, description: "", status: "available",
+  body_type: "", plate: "", price_resale: 0, price_public: 0, description: "", status: "available",
 };
 
 export function VehicleForm() {
@@ -61,8 +61,8 @@ export function VehicleForm() {
         brand: v.brand, model: v.model, year: v.year, version: v.version ?? "",
         color: v.color, mileage: v.mileage, fuel_type: v.fuel_type,
         transmission: v.transmission, condition: v.condition, body_type: v.body_type ?? "",
-        price_resale: v.price_resale, price_public: v.price_public, description: v.description ?? "",
-        status: v.status,
+        plate: v.plate ?? "", price_resale: v.price_resale, price_public: v.price_public,
+        description: v.description ?? "", status: v.status,
       });
 
       // Try to pre-select catalog entries
@@ -305,6 +305,15 @@ export function VehicleForm() {
           </Select>
           <Input label="Carrocería" value={form.body_type ?? ""} onChange={(e) => set("body_type", e.target.value)} placeholder="sedan, suv, pickup..." />
         </div>
+
+        {/* Plate */}
+        <Input
+          label="Patente"
+          value={form.plate ?? ""}
+          onChange={(e) => set("plate", e.target.value.toUpperCase())}
+          placeholder="Ej: AB 123 CD"
+          maxLength={10}
+        />
 
         {/* Status */}
         <div className="flex flex-col gap-1">

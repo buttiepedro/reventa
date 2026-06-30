@@ -30,6 +30,7 @@ class VehicleCreate(BaseModel):
     transmission: Transmission
     condition: VehicleCondition
     body_type: str | None = None
+    plate: str | None = None
     price_resale: Decimal
     price_public: Decimal
     description: str | None = None
@@ -61,6 +62,7 @@ class VehicleUpdate(BaseModel):
     transmission: Transmission | None = None
     condition: VehicleCondition | None = None
     body_type: str | None = None
+    plate: str | None = None
     price_resale: Decimal | None = None
     price_public: Decimal | None = None
     description: str | None = None
@@ -101,6 +103,7 @@ class VehicleRead(BaseModel):
     transmission: Transmission
     condition: VehicleCondition
     body_type: str | None
+    plate: str | None = None
     price_resale: Decimal
     price_public: Decimal
     description: str | None

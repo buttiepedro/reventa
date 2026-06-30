@@ -156,6 +156,7 @@ export function VehicleDetail() {
               vehicle.condition === "new" ? "Nuevo" : "Usado",
               vehicle.body_type,
               vehicle.color,
+              vehicle.plate ? `Patente: ${vehicle.plate}` : null,
             ].filter(Boolean).map((tag) => (
               <span key={tag} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-1 text-sm">{tag}</span>
             ))}

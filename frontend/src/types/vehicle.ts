@@ -25,6 +25,7 @@ export interface Vehicle {
   transmission: Transmission;
   condition: VehicleCondition;
   body_type: string | null;
+  plate: string | null;
   price_resale: number;
   price_public: number;
   description: string | null;
@@ -104,6 +105,7 @@ export interface VehicleCreate {
   transmission: Transmission;
   condition: VehicleCondition;
   body_type?: string;
+  plate?: string;
   price_resale: number;
   price_public: number;
   description?: string;
