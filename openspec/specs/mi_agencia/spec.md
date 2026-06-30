@@ -1,7 +1,8 @@
 ---
 title: Mi Agencia (Perfil de empresa con métricas y reputación)
-status: proposed
+status: active
 created: 2026-06-30
+implemented: 2026-06-30
 ---
 
 # Mi Agencia
@@ -128,3 +129,34 @@ company_ratings
 - `src/pages/agency/AgencyProfile.tsx` — vista pública de otra agencia
 - `src/components/ui/AgencyBadge.tsx` — logo + nombre + verified + rating
 - `src/components/ui/StatsRow.tsx` — fila de 4 métricas
+
+## Implementación (2026-06-30)
+
+### Estado: Perfil + Radar implementados; Reputación y Verificación pendientes
+
+**Migración 0006** — nuevos campos en `companies`:
+`cuit`, `verification_status`, `logo_url`, `description`, `phone`, `lat`, `lng`, `address_text`, `avg_rating`, `total_ratings`
+
+**Nuevas tablas en migración 0006:** `radar_entries`, `company_ratings` (estructura lista, sin endpoints aún)
+
+**Backend:**
+- `backend/app/schemas/company.py` — `CompanyProfile`, `CompanyProfileUpdate`, `RadarEntryCreate/Read`
+- `backend/app/api/v1/endpoints/companies.py`:
+  - `GET /companies/me/profile`
+  - `PATCH /companies/me/profile` (exclude_unset=True)
+  - `GET /companies/me/radar`
+  - `POST /companies/me/radar`
+  - `DELETE /companies/me/radar/{entry_id}`
+
+**Frontend:**
+- `frontend/src/pages/agency/MyAgency.tsx` — 3 tabs: Perfil | Conexiones | Radar
+- Tab Perfil: campos editables (cuit, phone, description, lat, lng, address_text), banner si falta CUIT, link a `/vehicles/my`
+- Tab Conexiones: solicitudes entrantes + confirmadas (pendiente de integración con favoritas)
+- Tab Radar: lista de entradas + formulario (brand, model, max_km, min_year, max_price)
+
+**No implementado aún:**
+- Sistema de calificaciones (tabla existe, sin endpoints ni UI)
+- Flujo de verificación CUIT por super_admin (campo verification_status existe)
+- Bot de feedback post-transacción
+- Upload de logo a S3 desde Mi Agencia
+- Stats en tiempo real (vehículos en stock, % operaciones exitosas, tiempo de respuesta)

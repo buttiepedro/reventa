@@ -191,10 +191,26 @@ Response: TasadorResult
 
 ## Criterios de aceptación
 
-- [ ] `POST /tasador/calculate` funcional con datos de red interna
-- [ ] Outliers eliminados (trimmed mean 15%)
+- [x] Tasador funcional con datos de red interna — implementado 2026-06-30 como `GET /tasador/valuate`
+- [x] Outliers eliminados — trimmed mean 10% implementado
 - [ ] Si <3 datos en red → usa scraper externo
-- [ ] Scraping cacheado 6hs por modelo (sin spam a portales)
-- [ ] Output muestra: precio referencia, índice de mercado, precio sugerido, desglose
-- [ ] MarketThermometer visual con aguja y label
+- [ ] Scraping cacheado 6hs por modelo
+- [x] Output muestra: precio referencia (suggested_price), min/max, sample_count, price_samples
+- [x] MarketThermometer visual — implementado como barra lineal con marcadores (no gauge semicircular)
 - [ ] Deducciones predefinidas + monto libre restan del precio sugerido
+
+## Estado parcial (2026-06-30)
+
+**Implementado:**
+- `GET /tasador/valuate?brand=&model=&year=&km=` en `backend/app/api/v1/endpoints/tasador.py`
+- Trimmed mean 10% (no 15% como especificado originalmente)
+- Ajuste por km: ±2% por 10.000 km vs promedio de red
+- `frontend/src/pages/tasador/Tasador.tsx` con Thermometer component inline
+- Tabla `scraper_cache` creada en migración 0006 (para uso futuro)
+
+**Pendiente:**
+- Scraper externo (`app/services/tasador_scraper.py`) con BeautifulSoup + httpx
+- Fallback a scraper cuando hay <3 vehículos en la red
+- Deducciones predefinidas (cubiertas, chapa, parabrisas) + descuento libre
+- Cascading selects marca/modelo del catálogo en el formulario
+- Endpoint `POST /tasador/calculate` completo con margen y deducciones

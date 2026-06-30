@@ -175,19 +175,32 @@ async def _notify_favorites_pre_toma(vehicle: Vehicle, session: AsyncSession):
 ## Criterios de aceptación
 
 ### Geofencing
-- [ ] Companies tienen lat/lng configurables en Mi Agencia
+- [x] Companies tienen lat/lng configurables en Mi Agencia — implementado 2026-06-30
 - [ ] Mercado muestra distancia en km en cada card
-- [ ] Orden: favoritas primero, luego por distancia ascendente
-- [ ] Empresas sin coordenadas aparecen al final
+- [x] Orden: favoritas primero, luego por distancia ascendente — Haversine en backend implementado 2026-06-30
+- [x] Empresas sin coordenadas aparecen al final — ORDER BY distancia NULLS LAST
 
 ### Liquidaciones
 - [ ] No se puede publicar liquidación si precio ≥ 85% del precio referencia
 - [ ] Liquidaciones expiran a las 72hs (cron job)
-- [ ] Tab "Liquidaciones (72hs)" en Mercado con countdown
+- [ ] Tab "Liquidaciones (72hs)" en Mercado con countdown (muestra "próximamente")
 - [ ] Al venderse el vehículo, la liquidación se cancela
 
 ### Pre-Toma v2
-- [ ] Pre-Toma tiene TTL de 24hs; countdown visible en el feed
-- [ ] Al vencer el TTL, el vehículo pasa automáticamente a `available`
-- [ ] Formulario Pre-Toma Express usa `capture="environment"` en mobile
-- [ ] Notificaciones de Pre-Toma solo van a favoritas con ese modelo en el Radar (cuando el Radar esté implementado)
+- [x] Pre-Toma tiene TTL de 24hs — `pre_toma_expires_at` en migración 0006, seteado en VehicleService
+- [x] Al vencer el TTL, el vehículo pasa automáticamente a `available` — asyncio scheduler en lifespan, cada 3600s
+- [ ] Countdown visible en el feed
+- [ ] Formulario Pre-Toma Express usa `capture="environment"` en mobile (formulario unificado aún)
+- [x] Notificaciones de Pre-Toma filtradas por Radar (backward compat: si nadie tiene radar, notifica a todos)
+
+## Estado parcial (2026-06-30)
+
+**Implementado:**
+- Geofencing: lat/lng en companies, Haversine en `get_network_list()`, ORDER BY distancia NULLS LAST
+- Pre-Toma TTL 24h: columna `pre_toma_expires_at`, scheduler asyncio en lifespan, `expire_pretoma_ttl()`
+- Tabla `liquidaciones` creada en migración 0006
+
+**Pendiente:**
+- Badge "X km" en cards del Mercado (distancia calculada en backend, no expuesta en schema UI)
+- Filtro por radio en Mercado
+- Liquidaciones: validación de precio, cron job de expiración, UI completa (actualmente "próximamente")

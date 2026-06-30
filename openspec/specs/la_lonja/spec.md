@@ -1,7 +1,8 @@
 ---
 title: La Lonja (Mercado de Demanda B2B)
-status: proposed
+status: active
 created: 2026-06-30
+implemented: 2026-06-30
 ---
 
 # La Lonja
@@ -146,3 +147,33 @@ direct_matches
 - `src/pages/lonja/PublishRequest.tsx` — formulario de solicitud
 - `src/components/ui/ClientRequestCard.tsx`
 - `src/components/ui/MatchCard.tsx`
+
+## Implementación (2026-06-30)
+
+### Estado: Fase 1 — CRUD + ranking de ofertas implementados
+
+**Backend:**
+- `backend/alembic/versions/0006_v2_foundation.py` — tablas `client_requests`, `stock_offers`, `direct_matches`
+- `backend/app/schemas/lonja.py` — `ClientRequestCreate/Read`, `StockOfferCreate/Read`
+- `backend/app/api/v1/endpoints/lonja.py`:
+  - `GET /lonja/requests` — feed activo (excluye propia empresa)
+  - `GET /lonja/my-requests` — mis solicitudes
+  - `POST /lonja/requests` — crea con `expires_at = now + 7 días`
+  - `DELETE /lonja/requests/{id}` — cancela (status=cancelled)
+  - `GET /lonja/requests/{id}/offers` — solo visible al dueño de la solicitud
+  - `POST /lonja/requests/{id}/offers` — crea oferta con rank_score calculado + Notification
+  - `PATCH /lonja/offers/{id}?new_status=accepted|rejected`
+
+**Algoritmo de ranking implementado:**
+- price_score: 70 pts (0 si fuera del presupuesto)
+- model_score: 20 pts (si brand+model está en reference_models)
+- recency_score: hasta 10 pts (según año del vehículo)
+
+**Frontend:**
+- `frontend/src/pages/lonja/Lonja.tsx` — 2 tabs: "La red busca" | "Mis consultas"
+- `frontend/src/services/lonjaService.ts`
+
+**No implementado aún:**
+- Auto-matching al publicar solicitud/vehículo (DirectMatch automático)
+- WhatsApp deeplinks al aceptar una oferta
+- Filtro "Para mi stock" compatible con stock propio

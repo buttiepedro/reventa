@@ -108,5 +108,20 @@ const TEMPLATES = {
 - [ ] MatchCard visible cuando hay matches o ofertas pendientes
 - [ ] Botón WhatsApp en MatchCard abre WhatsApp con mensaje pre-formateado
 - [ ] Feed de alertas muestra notificaciones recientes con link
-- [ ] Toggle Sin Cliente / Con Cliente visible en Home
+- [x] Toggle Sin Cliente / Con Cliente visible en Header — implementado 2026-06-30
 - [ ] Home se actualiza cada 60s sin recargar la página
+
+## Estado parcial (2026-06-30)
+
+**Implementado:**
+- Sistema de notificaciones in-app completo: tabla `notifications`, polling 30s, badge en Header
+- Toggle Con Cliente / Sin Cliente en Header (parte de pricing-dual-con-cliente)
+- Columna `phone` en companies (migración 0006)
+
+**Pendiente:**
+- `GET /home/stats` endpoint (consultas, ofertas, matches, vehículos)
+- `GET /home/inbox` endpoint con matches y ofertas recientes
+- MatchCard component en Home
+- StatsRow con datos reales
+- AlertFeed usando notificaciones
+- WhatsApp deeplinks (`src/utils/whatsapp.ts`)

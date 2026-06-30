@@ -1,7 +1,8 @@
 ---
 title: Tasador (Herramienta de Valoración de Tomas)
-status: proposed
+status: active
 created: 2026-06-30
+implemented: 2026-06-30
 ---
 
 # Tasador
@@ -114,3 +115,25 @@ AND created_at > now() - interval '90 days'
 - `app/services/tasador.py` — calcular precio gremio, índice de mercado, precio sugerido
 - `src/pages/tasador/Tasador.tsx` — formulario + gauge + resultado
 - `src/components/ui/MarketThermometer.tsx` — gauge SVG semicircular
+
+## Implementación (2026-06-30)
+
+### Estado: Fase 1 — red interna + termómetro implementados
+
+**Backend:**
+- `backend/app/api/v1/endpoints/tasador.py`
+- Endpoint: `GET /tasador/valuate?brand=&model=&year=&km=`
+- Busca vehículos `status=available` con año ±2, brand/model ILIKE
+- Ajuste km: ±2% por 10.000 km respecto al promedio de la red
+- Trimmed mean 10% (elimina top/bottom 10% de precios)
+- Retorna: `suggested_price`, `market_min`, `market_max`, `sample_count`, `price_samples`
+
+**Frontend:**
+- `frontend/src/pages/tasador/Tasador.tsx` — formulario (brand, model, year, km, offer_price) + Thermometer inline
+- Thermometer: barra rango verde, línea verde en precio sugerido, dot ámbar en precio ofrecido, veredicto textual (Muy por debajo → Muy por encima), lista de precios en la red
+
+**No implementado aún:**
+- Scraper externo para modelos sin datos suficientes en la red
+- Deducciones predefinidas por estado del vehículo
+- Cascading selects con catálogo (actualmente inputs de texto libre)
+- Historial de consultas por empresa

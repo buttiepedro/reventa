@@ -1,7 +1,8 @@
 ---
 title: Geofencing y Ordenamiento por Distancia
-status: proposed
+status: active
 created: 2026-06-30
+implemented: 2026-06-30
 ---
 
 # Geofencing y Ordenamiento por Distancia
@@ -101,3 +102,25 @@ radar_radius_km  INTEGER nullable          -- radio de notificaciones (default n
 - `app/repositories/client_request.py` — distancia en listado de La Lonja
 - `src/pages/agency/MyAgency.tsx` — configuración de ubicación (mapa o lat/lng manual)
 - `src/components/ui/VehicleCardDark.tsx` — badge "X km"
+
+## Implementación (2026-06-30)
+
+### Estado: Haversine backend + configuración de coordenadas implementados
+
+**Migración 0006** — nuevos campos en `companies`:
+`lat DECIMAL(10,8)`, `lng DECIMAL(11,8)`, `address_text VARCHAR(500)`
+
+**Backend:**
+- `backend/app/repositories/vehicle.py` — función `_haversine_km(lat1, lon1, lat2_col, lon2_col)` con `func.power/sin/cos/radians/asin/sqrt`
+- `get_network_list()` acepta `viewer_lat: float | None`, `viewer_lng: float | None`; JOIN a `Company` cuando hay coords; ORDER BY distancia `NULLS LAST`
+- `backend/app/services/vehicle.py` — `get_network_list()` consulta `companies.lat/lng` del usuario logueado y las pasa al repo
+
+**Frontend:**
+- `frontend/src/pages/agency/MyAgency.tsx` — inputs lat/lng en tab Perfil para configuración manual de coordenadas
+
+**No implementado aún:**
+- Badge "X km" en las cards del mercado (distancia calculada en backend, no expuesta en el schema de VehicleListItem)
+- Filtro por radio en el Mercado
+- Botón "Usar mi ubicación" con Geolocation API
+- Ordenamiento por distancia en La Lonja (sólo en Mercado por ahora)
+- `radar_radius_km` en companies (no incluido en migración 0006)

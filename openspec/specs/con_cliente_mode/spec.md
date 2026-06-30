@@ -1,7 +1,8 @@
 ---
 title: Modo "Con Cliente" (Audiencia Dual)
-status: proposed
+status: active
 created: 2026-06-30
+implemented: 2026-06-30
 ---
 
 # Modo "Con Cliente" (Audiencia Dual)
@@ -126,3 +127,22 @@ El modo SHALL persistir entre navegaciones dentro de la misma sesión.
 - `company.name` → sustituir por "Agencia verificada"
 - `company.logo_url` → no mostrar
 - Tabs de navegación: en Con Cliente solo mostrar Mercado (y opcionalmente La Lonja sin datos de agencia)
+
+## Implementación (2026-06-30)
+
+### Estado: Toggle + PIN client-side implementados
+
+**Frontend:**
+- `frontend/src/context/AudienceContext.tsx` — `mode: 'dealer' | 'client'`, PIN en sessionStorage bajo clave `audience_pin`; `enterClientMode()` instantáneo, `exitClientMode(pin)` verifica PIN
+- `frontend/src/components/PinModal.tsx` — 4 inputs separados tipo password con inputMode=numeric, auto-avance al escribir dígito, auto-submit en 4° dígito, shake + clear en PIN incorrecto, tecla Escape cancela
+- `frontend/src/components/Layout/Header.tsx` — pill "Sin Cliente" / "Con Cliente" (ámbar activo), menú "Configurar PIN cliente" / "Cambiar PIN cliente", dos instancias de PinModal (exit y set)
+- `frontend/src/components/vehicles/VehicleCard.tsx` — oculta `price_resale`, muestra `price_public` en verde
+- `frontend/src/pages/vehicles/VehicleDetail.tsx` — oculta sección precio gremio, muestra precio público como número verde grande
+- `frontend/src/index.css` — `@keyframes shake` + `.animate-shake` para el PinModal
+
+**Migración 0006:** columna `audience_pin_hash VARCHAR(60) nullable` añadida a `users`
+
+**No implementado aún:**
+- Endpoints backend de PIN (`PUT /users/me/audience-pin`, `POST /users/me/audience-pin/verify`) — el PIN se valida solo client-side
+- Auto-lock por evento `visibilitychange`
+- Ocultar nombre y logo de agencias ajenas en modo client (solo se oculta price_resale actualmente)

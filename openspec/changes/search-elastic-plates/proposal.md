@@ -76,9 +76,24 @@ elif params.q:
 
 ## Criterios de aceptación
 
-- [ ] Campo `plate` en formulario de vehículo (opcional)
+- [x] Campo `plate` en formulario de vehículo (opcional) — implementado 2026-06-30
 - [ ] Búsqueda por número aplica tolerancia del 15% sobre `price_public`
 - [ ] Búsqueda por patente retorna vehículos con coincidencia parcial
 - [ ] Buscador detecta tipo de input automáticamente (texto / número / patente)
 - [ ] Badge explicativo visible cuando se busca por presupuesto
 - [ ] Tolerancia configurable sin redeploy (parámetro en env o endpoint)
+
+## Estado parcial (2026-06-30)
+
+**Implementado:**
+- Columna `plate VARCHAR(20)` en vehicles con índice (migración 0006)
+- Schema `VehicleCreate/Update/Read` incluye `plate: str | None = None`
+- `frontend/src/pages/vehicles/VehicleForm.tsx` — campo "Patente" con `.toUpperCase()` y maxLength=10
+- `frontend/src/pages/vehicles/VehicleDetail.tsx` — muestra patente como tag si presente
+- `frontend/src/types/vehicle.ts` — `plate: string | null` en Vehicle y VehicleCreate
+
+**Pendiente:**
+- Búsqueda elástica por presupuesto con tolerancia ±15%
+- Búsqueda por patente en el endpoint `GET /vehicles`
+- Detección automática de tipo de input en el buscador global
+- Badge de tolerancia en la UI
