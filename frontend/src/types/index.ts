@@ -18,6 +18,35 @@ export interface Company {
   created_at: string;
 }
 
+export interface CompanyProfile {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  cuit: string | null;
+  verification_status: string;
+  logo_url: string | null;
+  description: string | null;
+  phone: string | null;
+  lat: number | null;
+  lng: number | null;
+  address_text: string | null;
+  avg_rating: number | null;
+  total_ratings: number;
+  created_at: string;
+}
+
+export interface RadarEntry {
+  id: string;
+  brand: string;
+  model: string | null;
+  category: string | null;
+  max_km: number | null;
+  min_year: number | null;
+  max_price: number | null;
+  created_at: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;
