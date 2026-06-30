@@ -23,9 +23,10 @@ const FUEL_LABELS: Record<string, string> = {
 
 interface Props {
   vehicle: VehicleListItem;
+  showPreTomaActions?: boolean;
 }
 
-export function VehicleCard({ vehicle }: Props) {
+export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }: Props) {
   return (
     <Link to={`/vehicles/${vehicle.id}`} className="block group">
       <div className={`bg-white rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-shadow ${

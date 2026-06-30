@@ -7,9 +7,13 @@ import { Layout } from "@/components/Layout/Layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Login } from "@/pages/Login";
 import { NotFound } from "@/pages/NotFound";
+import { Home } from "@/pages/home/Home";
+import { Lonja } from "@/pages/lonja/Lonja";
+import { Mercado } from "@/pages/mercado/Mercado";
+import { Tasador } from "@/pages/tasador/Tasador";
+import { MyAgency } from "@/pages/agency/MyAgency";
 import { Companies } from "@/pages/admin/Companies";
 import { CompanyDetail } from "@/pages/admin/CompanyDetail";
-import { NetworkCatalog } from "@/pages/vehicles/NetworkCatalog";
 import { MyStock } from "@/pages/vehicles/MyStock";
 import { VehicleForm } from "@/pages/vehicles/VehicleForm";
 import { VehicleDetail } from "@/pages/vehicles/VehicleDetail";
@@ -17,7 +21,6 @@ import { PublicShare } from "@/pages/vehicles/PublicShare";
 import { Favorites } from "@/pages/favorites/Favorites";
 import { ChangePassword } from "@/pages/profile/ChangePassword";
 import { SheetSync } from "@/pages/vehicles/SheetSync";
-import { PreTomaFeed } from "@/pages/vehicles/PreTomaFeed";
 import { Catalog } from "@/pages/admin/Catalog";
 
 const COMPANY_ROLES = ["company_admin", "company_user"] as const;
@@ -36,7 +39,7 @@ export function App() {
     <BrowserRouter>
       <AuthProvider>
         <ErrorBoundary>
-          <Toaster position="top-right" richColors closeButton />
+          <Toaster position="top-center" richColors closeButton />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/share/:token" element={<PublicShare />} />
@@ -58,20 +61,29 @@ export function App() {
               }
             />
 
-            {/* Company roles */}
-            <Route path="/vehicles" element={<Protected roles={COMPANY_ROLES}><NetworkCatalog /></Protected>} />
+            {/* Company roles — bottom nav tabs */}
+            <Route path="/inicio" element={<Protected roles={COMPANY_ROLES}><Home /></Protected>} />
+            <Route path="/lonja" element={<Protected roles={COMPANY_ROLES}><Lonja /></Protected>} />
+            <Route path="/mercado" element={<Protected roles={COMPANY_ROLES}><Mercado /></Protected>} />
+            <Route path="/tasador" element={<Protected roles={COMPANY_ROLES}><Tasador /></Protected>} />
+            <Route path="/agencia" element={<Protected roles={COMPANY_ROLES}><MyAgency /></Protected>} />
+
+            {/* Company stock management */}
             <Route path="/vehicles/my" element={<Protected roles={COMPANY_ROLES}><MyStock /></Protected>} />
             <Route path="/vehicles/new" element={<Protected roles={COMPANY_ROLES}><VehicleForm /></Protected>} />
             <Route path="/vehicles/sheet-sync" element={<Protected roles={COMPANY_ROLES}><SheetSync /></Protected>} />
-            <Route path="/vehicles/pre-toma" element={<Protected roles={COMPANY_ROLES}><PreTomaFeed /></Protected>} />
             <Route path="/vehicles/:id" element={<Protected roles={COMPANY_ROLES}><VehicleDetail /></Protected>} />
             <Route path="/vehicles/:id/edit" element={<Protected roles={COMPANY_ROLES}><VehicleForm /></Protected>} />
-            <Route path="/favorites" element={<Protected roles={COMPANY_ROLES}><Favorites /></Protected>} />
 
-            {/* All authenticated users */}
+            {/* Legacy redirects */}
+            <Route path="/vehicles" element={<Navigate to="/mercado" replace />} />
+            <Route path="/vehicles/pre-toma" element={<Navigate to="/mercado" replace />} />
+            <Route path="/favorites" element={<Navigate to="/agencia" replace />} />
+
+            {/* All authenticated */}
             <Route path="/profile/password" element={<Protected roles={ALL_ROLES}><ChangePassword /></Protected>} />
 
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Navigate to="/inicio" replace />} />
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
         </ErrorBoundary>

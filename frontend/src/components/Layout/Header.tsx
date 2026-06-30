@@ -8,7 +8,6 @@ export function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
@@ -17,7 +16,6 @@ export function Header() {
   const isCompanyUser = user?.role === "company_admin" || user?.role === "company_user";
   const isSuperAdmin = user?.role === "super_admin";
 
-  // Poll unread count every 30s
   useEffect(() => {
     if (!isCompanyUser) return;
     const fetchCount = () =>
@@ -48,24 +46,19 @@ export function Header() {
     }
     setNotifOpen(false);
     if (n.entity_type === "pre_toma" || n.entity_type === "pre_toma_interest") {
-      navigate("/vehicles/pre-toma");
-    } else if (n.entity_type === "favorite_request") {
-      navigate("/favorites");
-    } else if (n.entity_type === "favorite_accepted") {
-      navigate("/favorites");
+      navigate("/mercado");
+    } else if (n.entity_type === "favorite_request" || n.entity_type === "favorite_accepted") {
+      navigate("/agencia");
+    } else if (n.entity_type === "direct_match") {
+      navigate("/inicio");
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const handleLogout = () => { logout(); navigate("/login"); };
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  const adminNavClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors pb-0.5 border-b-2 ${
-      isActive
-        ? "text-blue-600 border-blue-600"
-        : "text-gray-600 border-transparent hover:text-gray-900"
+      isActive ? "text-green-600 border-green-600" : "text-gray-600 border-transparent hover:text-gray-900"
     }`;
 
   const timeAgo = (dateStr: string) => {
@@ -78,41 +71,30 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <Link to="/" className="text-lg font-black text-blue-700 tracking-tight shrink-0">
+          <Link to={isCompanyUser ? "/inicio" : "/admin/companies"} className="text-lg font-black text-green-600 tracking-tight shrink-0">
             Reventa
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-6">
-            {isCompanyUser && (
-              <>
-                <NavLink to="/vehicles" end className={navLinkClass}>Red</NavLink>
-                <NavLink to="/vehicles/my" className={navLinkClass}>Mi stock</NavLink>
-                <NavLink to="/vehicles/pre-toma" className={navLinkClass}>Pre Tomas</NavLink>
-                <NavLink to="/favorites" className={navLinkClass}>Favoritas</NavLink>
-              </>
-            )}
-            {isSuperAdmin && (
-              <>
-                <NavLink to="/admin/companies" className={navLinkClass}>Empresas</NavLink>
-                <NavLink to="/admin/catalog" className={navLinkClass}>Catálogo</NavLink>
-              </>
-            )}
-          </nav>
+          {/* Super admin nav */}
+          {isSuperAdmin && (
+            <nav className="flex items-center gap-6">
+              <NavLink to="/admin/companies" className={adminNavClass}>Empresas</NavLink>
+              <NavLink to="/admin/catalog" className={adminNavClass}>Catálogo</NavLink>
+            </nav>
+          )}
 
           {/* Right side */}
           {user && (
-            <div className="flex items-center gap-3">
-              {/* Notification bell */}
+            <div className="flex items-center gap-2">
+              {/* Notification bell (company users only) */}
               {isCompanyUser && (
                 <div className="relative" ref={notifRef}>
                   <button
                     onClick={openNotifications}
-                    className="relative p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
-                    title="Notificaciones"
+                    className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
                   >
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -127,11 +109,11 @@ export function Header() {
                   {notifOpen && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
-                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 z-20 overflow-hidden">
+                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden">
                         <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
                           <span className="text-sm font-semibold text-gray-800">Notificaciones</span>
                           {notifications.some((n) => !n.is_read) && (
-                            <button onClick={handleMarkAllRead} className="text-xs text-blue-600 hover:underline">
+                            <button onClick={handleMarkAllRead} className="text-xs text-green-600 hover:underline">
                               Marcar todas como leídas
                             </button>
                           )}
@@ -144,10 +126,10 @@ export function Header() {
                               <button
                                 key={n.id}
                                 onClick={() => handleNotifClick(n)}
-                                className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${!n.is_read ? "bg-blue-50" : ""}`}
+                                className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${!n.is_read ? "bg-green-50" : ""}`}
                               >
                                 <div className="flex items-start gap-2">
-                                  {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 shrink-0" />}
+                                  {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-green-500 shrink-0" />}
                                   <div className={!n.is_read ? "" : "ml-4"}>
                                     <p className="text-xs font-medium text-gray-800 leading-snug">{n.title}</p>
                                     <p className="text-xs text-gray-400 mt-0.5">{timeAgo(n.created_at)}</p>
@@ -163,23 +145,25 @@ export function Header() {
                 </div>
               )}
 
-              {/* User dropdown */}
-              <div className="relative hidden md:block">
+              {/* User menu */}
+              <div className="relative">
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
-                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none"
+                  className="flex items-center gap-1.5 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
                 >
-                  <span className="font-medium">{user.full_name}</span>
-                  <span className="text-gray-400 text-xs">({user.role.replace(/_/g, " ")})</span>
-                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </button>
 
                 {menuOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-20 py-1">
+                    <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-100 z-20 py-1">
+                      <div className="px-4 py-2 border-b border-gray-50">
+                        <p className="text-xs font-semibold text-gray-800 truncate">{user.full_name}</p>
+                        <p className="text-xs text-gray-400">{user.role.replace(/_/g, " ")}</p>
+                      </div>
                       <Link
                         to="/profile/password"
                         onClick={() => setMenuOpen(false)}
@@ -198,47 +182,10 @@ export function Header() {
                   </>
                 )}
               </div>
-
-              {/* Mobile hamburger */}
-              <button
-                className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {mobileNavOpen
-                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
-                </svg>
-              </button>
             </div>
           )}
         </div>
       </div>
-
-      {/* Mobile nav panel */}
-      {mobileNavOpen && user && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 flex flex-col gap-3">
-          {isCompanyUser && (
-            <>
-              <NavLink to="/vehicles" end className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Red</NavLink>
-              <NavLink to="/vehicles/my" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Mi stock</NavLink>
-              <NavLink to="/vehicles/pre-toma" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Pre Tomas</NavLink>
-              <NavLink to="/favorites" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Favoritas</NavLink>
-            </>
-          )}
-          {isSuperAdmin && (
-            <>
-              <NavLink to="/admin/companies" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Empresas</NavLink>
-              <NavLink to="/admin/catalog" className={navLinkClass} onClick={() => setMobileNavOpen(false)}>Catálogo</NavLink>
-            </>
-          )}
-          <hr className="border-gray-100" />
-          <Link to="/profile/password" className="text-sm text-gray-700" onClick={() => setMobileNavOpen(false)}>
-            Cambiar contraseña
-          </Link>
-          <button onClick={handleLogout} className="text-sm text-red-600 text-left">Cerrar sesión</button>
-        </div>
-      )}
     </header>
   );
 }

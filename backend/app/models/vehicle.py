@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -65,6 +65,12 @@ class Vehicle(Base):
     )
     external_id: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
     share_token: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), unique=True, default=uuid.uuid4, nullable=False)
+
+    # v2 fields
+    plate: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
+    has_service_history: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    aesthetic_condition: Mapped[str] = mapped_column(String(10), nullable=False, default="good")
+    pre_toma_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
