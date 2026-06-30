@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/hooks/useAuth";
+import { useAudience } from "@/context/AudienceContext";
 import type { Vehicle } from "@/types/vehicle";
 
 const FUEL_LABELS: Record<string, string> = {
@@ -40,6 +41,7 @@ export function VehicleDetail() {
 
   useEffect(() => { load(); }, [id]);
 
+  const { isClientMode } = useAudience();
   const isOwner = user && vehicle && user.company_id === vehicle.company_id;
   const canEdit = isOwner || user?.role === "super_admin";
 
@@ -159,14 +161,18 @@ export function VehicleDetail() {
             ))}
           </div>
 
-          <div className="bg-blue-50 rounded-xl p-5 mb-6">
-            <div className="mb-3">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Precio reventa</p>
-              <p className="text-3xl font-black text-blue-700">${Number(vehicle.price_resale).toLocaleString()}</p>
-            </div>
+          <div className="bg-gray-50 rounded-xl p-5 mb-6">
+            {!isClientMode && (
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Precio reventa</p>
+                <p className="text-3xl font-black text-blue-700">${Number(vehicle.price_resale).toLocaleString()}</p>
+              </div>
+            )}
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Precio público</p>
-              <p className="text-xl font-bold text-gray-700">${Number(vehicle.price_public).toLocaleString()}</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">{isClientMode ? "Precio" : "Precio público"}</p>
+              <p className={`font-black ${isClientMode ? "text-3xl text-green-600" : "text-xl text-gray-700"}`}>
+                ${Number(vehicle.price_public).toLocaleString()}
+              </p>
             </div>
           </div>
 

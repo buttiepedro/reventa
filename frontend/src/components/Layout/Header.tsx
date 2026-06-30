@@ -2,13 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useAudience } from "@/context/AudienceContext";
+import { PinModal } from "@/components/PinModal";
 import { notificationService, type AppNotification } from "../../services/notificationService";
 
 export function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { isClientMode, clientPin, enterClientMode, exitClientMode, setClientPin } = useAudience();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [showPinModal, setShowPinModal] = useState<"exit" | "set" | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -56,6 +60,18 @@ export function Header() {
 
   const handleLogout = () => { logout(); navigate("/login"); };
 
+  const handleAudienceToggle = () => {
+    if (isClientMode) {
+      if (clientPin) {
+        setShowPinModal("exit");
+      } else {
+        exitClientMode("");
+      }
+    } else {
+      enterClientMode();
+    }
+  };
+
   const adminNavClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors pb-0.5 border-b-2 ${
       isActive ? "text-green-600 border-green-600" : "text-gray-600 border-transparent hover:text-gray-900"
@@ -84,6 +100,21 @@ export function Header() {
               <NavLink to="/admin/companies" className={adminNavClass}>Empresas</NavLink>
               <NavLink to="/admin/catalog" className={adminNavClass}>Catálogo</NavLink>
             </nav>
+          )}
+
+          {/* Con Cliente toggle (company users only) */}
+          {isCompanyUser && (
+            <button
+              onClick={handleAudienceToggle}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                isClientMode
+                  ? "bg-amber-100 text-amber-700 ring-1 ring-amber-300"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              <span>{isClientMode ? "👤" : "🔒"}</span>
+              <span>{isClientMode ? "Con cliente" : "Sin cliente"}</span>
+            </button>
           )}
 
           {/* Right side */}
@@ -171,6 +202,14 @@ export function Header() {
                       >
                         Cambiar contraseña
                       </Link>
+                      {isCompanyUser && (
+                        <button
+                          onClick={() => { setMenuOpen(false); setShowPinModal("set"); }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          {clientPin ? "Cambiar PIN cliente" : "Configurar PIN cliente"}
+                        </button>
+                      )}
                       <hr className="my-1 border-gray-100" />
                       <button
                         onClick={handleLogout}
@@ -186,6 +225,30 @@ export function Header() {
           )}
         </div>
       </div>
+      {showPinModal === "exit" && (
+        <PinModal
+          title="Salir del modo cliente"
+          subtitle="Ingresá tu PIN para volver al modo concesionaria"
+          onSubmit={(pin) => {
+            const ok = exitClientMode(pin);
+            if (ok) setShowPinModal(null);
+            return ok;
+          }}
+          onCancel={() => setShowPinModal(null)}
+        />
+      )}
+      {showPinModal === "set" && (
+        <PinModal
+          title="Establecer PIN de cliente"
+          subtitle="Elegí un PIN de 4 dígitos para proteger el modo concesionaria"
+          onSubmit={(pin) => {
+            setClientPin(pin);
+            setShowPinModal(null);
+            return true;
+          }}
+          onCancel={() => setShowPinModal(null)}
+        />
+      )}
     </header>
   );
 }

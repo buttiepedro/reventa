@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAudience } from "@/context/AudienceContext";
 import type { VehicleListItem } from "@/types/vehicle";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }: Props) {
+  const { isClientMode } = useAudience();
   return (
     <Link to={`/vehicles/${vehicle.id}`} className="block group">
       <div className={`bg-white rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-shadow ${
@@ -70,15 +72,17 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
             <span>{vehicle.transmission === "manual" ? "Manual" : "Automático"}</span>
           </div>
           <div className="flex justify-between items-end mt-3">
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Reventa</p>
-              <p className="font-bold text-blue-600 text-lg leading-none">
-                ${Number(vehicle.price_resale).toLocaleString()}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Público</p>
-              <p className="font-semibold text-gray-700 text-sm">
+            {!isClientMode && (
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Reventa</p>
+                <p className="font-bold text-blue-600 text-lg leading-none">
+                  ${Number(vehicle.price_resale).toLocaleString()}
+                </p>
+              </div>
+            )}
+            <div className={isClientMode ? "" : "text-right"}>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Precio</p>
+              <p className={`font-bold text-lg leading-none ${isClientMode ? "text-green-600" : "text-gray-700 text-sm font-semibold"}`}>
                 ${Number(vehicle.price_public).toLocaleString()}
               </p>
             </div>
