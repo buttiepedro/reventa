@@ -4,6 +4,7 @@ import { lonjaService, type ClientRequest, type ClientRequestCreate, type StockO
 import { vehicleService } from "@/services/vehicleService";
 import { Spinner } from "@/components/ui/Spinner";
 import { Input } from "@/components/ui/Input";
+import { useAuth } from "@/hooks/useAuth";
 import type { VehicleListItem } from "@/types/vehicle";
 
 type Tab = "consultas" | "mis_consultas";
@@ -368,6 +369,8 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
 // ─── Main ────────────────────────────────────────────────────
 
 export function Lonja() {
+  const { user } = useAuth();
+  const isReventa = user?.role === "reventa";
   const [tab, setTab] = useState<Tab>("consultas");
   const [requests, setRequests] = useState<ClientRequest[]>([]);
   const [myVehicles, setMyVehicles] = useState<VehicleListItem[]>([]);
@@ -387,6 +390,11 @@ export function Lonja() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-gray-900">La Lonja</h1>
+      {isReventa && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+          <span className="font-semibold">Reventa Autorizado</span> — Podés ver las consultas activas y ofrecer tu stock, pero no podés publicar nuevas búsquedas.
+        </div>
+      )}
       <TabToggle active={tab} onChange={setTab} />
 
       {tab === "consultas" && (
@@ -413,7 +421,15 @@ export function Lonja() {
       )}
 
       {tab === "mis_consultas" && (
-        <MyRequestsTab onRequestCreated={loadRequests} />
+        isReventa ? (
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <p className="text-2xl mb-2">🔒</p>
+            <p className="text-sm font-semibold text-gray-700">Función no disponible</p>
+            <p className="text-xs text-gray-400 mt-1">Las cuentas Reventa Autorizado no pueden publicar búsquedas. Solo podés ofrecer tu stock a las consultas de otros.</p>
+          </div>
+        ) : (
+          <MyRequestsTab onRequestCreated={loadRequests} />
+        )
       )}
     </div>
   );

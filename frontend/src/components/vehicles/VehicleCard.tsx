@@ -87,7 +87,7 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
               </p>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-2">{vehicle.company_name}</p>
+          <p className="text-xs text-gray-400 mt-2">{isClientMode ? "Agencia verificada" : vehicle.company_name}</p>
         </div>
       </div>
     </Link>

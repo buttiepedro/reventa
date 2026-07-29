@@ -92,6 +92,8 @@ async def create_vehicle(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    if current_user.role == Role.REVENTA:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reventa Autorizado no puede publicar vehículos")
     assert current_user.company_id is not None
     svc = VehicleService(session)
     vehicle = await svc.create(current_user.company_id, data)

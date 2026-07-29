@@ -137,7 +137,7 @@ export function VehicleDetail() {
 
         {/* Info */}
         <div>
-          <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{vehicle.company_name}</p>
+          <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{isClientMode ? "Agencia verificada" : vehicle.company_name}</p>
           <div className="flex items-start gap-3 mb-1">
             <h1 className="text-2xl font-black text-gray-900">
               {vehicle.brand} {vehicle.model} <span className="font-normal text-gray-500">{vehicle.year}</span>

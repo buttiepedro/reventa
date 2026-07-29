@@ -13,6 +13,7 @@ class Role(str, PyEnum):
     SUPER_ADMIN = "super_admin"
     COMPANY_ADMIN = "company_admin"
     COMPANY_USER = "company_user"
+    REVENTA = "reventa"
 
 
 class User(Base):

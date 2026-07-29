@@ -10,12 +10,58 @@ from app.api.deps import get_current_user, get_session
 from app.models.client_request import ClientRequest
 from app.models.notification import Notification
 from app.models.stock_offer import StockOffer
+from app.models.user import Role
 from app.models.vehicle import Vehicle, VehicleStatus
 from app.schemas.lonja import ClientRequestCreate, ClientRequestRead, StockOfferCreate, StockOfferRead
 
 router = APIRouter()
 
 _REQUEST_TTL_DAYS = 7
+
+
+async def _run_auto_match(req: ClientRequest, session: AsyncSession) -> None:
+    """When a request is created, notify companies whose available stock fits the budget."""
+    budget_ceiling = float(req.budget_max) * 1.10
+    budget_floor = float(req.budget_min) * 0.90 if req.budget_min else 0.0
+
+    stmt = (
+        select(Vehicle)
+        .where(
+            Vehicle.status == VehicleStatus.AVAILABLE,
+            Vehicle.company_id != req.company_id,
+            Vehicle.price_resale <= budget_ceiling,
+            Vehicle.price_resale >= budget_floor,
+        )
+        .limit(100)
+    )
+    result = await session.execute(stmt)
+    vehicles = result.scalars().all()
+    if not vehicles:
+        return
+
+    # Group by company; apply model filter when reference_models are set
+    company_matches: dict[uuid.UUID, list[Vehicle]] = {}
+    for v in vehicles:
+        if req.reference_models:
+            label = f"{v.brand} {v.model}".lower()
+            if not any(ref.lower() in label or label in ref.lower() for ref in req.reference_models):
+                continue
+        company_matches.setdefault(v.company_id, []).append(v)
+
+    for company_id, matched in company_matches.items():
+        first = matched[0]
+        label = (
+            f"{first.brand} {first.model} {first.year}"
+            if len(matched) == 1
+            else f"{len(matched)} vehículos"
+        )
+        session.add(Notification(
+            company_id=company_id,
+            title=f"Match en La Lonja: buscan {label}",
+            body=f"Un colega busca comprar con ${float(req.budget_max):,.0f} ({req.payment_method}). ¡Ofrecé tu stock!",
+            entity_type="lonja_match",
+            entity_id=req.id,
+        ))
 
 
 def _rank_score(vehicle: Vehicle, request: ClientRequest) -> Decimal:
@@ -115,6 +161,8 @@ async def create_request(
 ):
     if not current_user.company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    if current_user.role == Role.REVENTA:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reventa Autorizado no puede publicar consultas en La Lonja")
     req = ClientRequest(
         company_id=current_user.company_id,
         budget_max=data.budget_max,
@@ -127,6 +175,7 @@ async def create_request(
     )
     session.add(req)
     await session.flush()
+    await _run_auto_match(req, session)
     await session.refresh(req, ["company"])
     return ClientRequestRead(
         **{k: v for k, v in req.__dict__.items() if not k.startswith("_") and k != "company"},

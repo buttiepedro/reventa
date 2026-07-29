@@ -6,6 +6,7 @@ import { sheetService, type SyncResult } from "@/services/sheetService";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
+import { useAuth } from "@/hooks/useAuth";
 import type { VehicleListItem, VehicleStatus } from "@/types/vehicle";
 import type { ApiError } from "@/types";
 
@@ -34,6 +35,8 @@ interface Interest { company_id: string; company_name: string; created_at: strin
 
 export function MyStock() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isReventa = user?.role === "reventa";
   const [vehicles, setVehicles] = useState<VehicleListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasSheet, setHasSheet] = useState(false);
@@ -131,20 +134,29 @@ export function MyStock() {
 
   return (
     <div className="pb-10">
+      {isReventa && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+          <span className="font-semibold">Reventa Autorizado</span> — Tu cuenta es de solo lectura. Podés ver y comprar Pre-Tomas y Liquidaciones, pero no publicar vehículos.
+        </div>
+      )}
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Mi stock</h1>
         <div className="flex gap-2">
-          {hasSheet && (
+          {hasSheet && !isReventa && (
             <Button variant="secondary" loading={syncing} onClick={handleQuickSync}>
               Sincronizar hoja
             </Button>
           )}
-          <Button variant="secondary" onClick={() => navigate("/vehicles/sheet-sync")}>
-            {hasSheet ? "Configurar hoja" : "Vincular hoja"}
-          </Button>
-          <Link to="/vehicles/new">
-            <Button>+ Nuevo vehículo</Button>
-          </Link>
+          {!isReventa && (
+            <Button variant="secondary" onClick={() => navigate("/vehicles/sheet-sync")}>
+              {hasSheet ? "Configurar hoja" : "Vincular hoja"}
+            </Button>
+          )}
+          {!isReventa && (
+            <Link to="/vehicles/new">
+              <Button>+ Nuevo vehículo</Button>
+            </Link>
+          )}
         </div>
       </div>
 

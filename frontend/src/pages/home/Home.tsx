@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
 import { notificationService, type AppNotification } from "@/services/notificationService";
 
 interface HomeStats {
@@ -29,7 +30,7 @@ const ALERT_ICON: Record<string, string> = {
 export function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [stats] = useState<HomeStats>({
+  const [stats, setStats] = useState<HomeStats>({
     consultas_recibidas: 0,
     ofertas_pendientes: 0,
     match_directos: 0,
@@ -39,6 +40,7 @@ export function Home() {
 
   useEffect(() => {
     notificationService.list().then(setAlerts).catch(() => {});
+    api.get<HomeStats>("/home/stats").then(setStats).catch(() => {});
   }, []);
 
   const handleAlertClick = (n: AppNotification) => {

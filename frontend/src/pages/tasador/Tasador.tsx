@@ -25,6 +25,19 @@ interface FormState {
   offer_price: string;
 }
 
+interface Deducciones {
+  cubiertas: boolean;
+  chapa: boolean;
+  parabrisas: boolean;
+  custom: string;
+}
+
+const DEDUCCION_ITEMS = [
+  { key: "cubiertas" as const, label: "Cubiertas desgastadas", amount: 800 },
+  { key: "chapa" as const, label: "Daños estéticos / chapa", amount: 500 },
+  { key: "parabrisas" as const, label: "Parabrisas roto", amount: 400 },
+];
+
 // ─── Thermometer ─────────────────────────────────────────────
 
 function Thermometer({
@@ -128,8 +141,17 @@ export function Tasador() {
   const [form, setForm] = useState<FormState>({
     brand: "", model: "", year: new Date().getFullYear() - 3, km: 50000, offer_price: "",
   });
+  const [deducciones, setDeducciones] = useState<Deducciones>({
+    cubiertas: false, chapa: false, parabrisas: false, custom: "",
+  });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ValuationResult | null>(null);
+
+  const totalDeduccion =
+    (deducciones.cubiertas ? 800 : 0) +
+    (deducciones.chapa ? 500 : 0) +
+    (deducciones.parabrisas ? 400 : 0) +
+    Number(deducciones.custom || 0);
 
   const set = (key: keyof FormState, val: string | number) =>
     setForm((f) => ({ ...f, [key]: val }));
@@ -231,7 +253,58 @@ export function Tasador() {
               </p>
             </div>
           ) : (
-            <Thermometer result={result} offerPrice={offerPrice} />
+            <>
+              <Thermometer result={result} offerPrice={offerPrice} />
+
+              {/* Deducciones */}
+              <div className="bg-white rounded-xl shadow-sm p-5 space-y-3">
+                <p className="text-sm font-bold text-gray-800">Deducciones por estado</p>
+                <div className="space-y-2">
+                  {DEDUCCION_ITEMS.map(({ key, label, amount }) => (
+                    <label key={key} className="flex items-center justify-between cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={deducciones[key]}
+                          onChange={(e) => setDeducciones((d) => ({ ...d, [key]: e.target.checked }))}
+                          className="w-4 h-4 rounded accent-red-500"
+                        />
+                        <span className="text-sm text-gray-700">{label}</span>
+                      </div>
+                      <span className="text-sm text-red-500 font-semibold">-${amount.toLocaleString()}</span>
+                    </label>
+                  ))}
+                  <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
+                    <span className="text-sm text-gray-700 shrink-0">Otra deducción ($)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={deducciones.custom}
+                      onChange={(e) => setDeducciones((d) => ({ ...d, custom: e.target.value }))}
+                      placeholder="0"
+                      className="w-28 text-right text-sm border border-gray-200 rounded-lg px-2 py-1"
+                    />
+                  </div>
+                </div>
+
+                {totalDeduccion > 0 && result.suggested_price && (
+                  <div className="border-t border-gray-100 pt-3 space-y-1">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Precio sugerido de red</span>
+                      <span>${Number(result.suggested_price).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-red-500">
+                      <span>Total deducciones</span>
+                      <span>-${totalDeduccion.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-bold text-green-700 pt-1 border-t border-gray-100">
+                      <span>Precio máximo de toma</span>
+                      <span>${Math.max(0, result.suggested_price - totalDeduccion).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </>
       )}
