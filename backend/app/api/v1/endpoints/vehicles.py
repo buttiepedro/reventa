@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -9,6 +10,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session
+from app.core.database import AsyncSessionLocal
 from app.models.notification import Notification
 from app.models.pre_toma_interest import PreTomaInterest
 from app.models.user import Role, User
@@ -120,7 +122,26 @@ async def create_vehicle(
         )
     svc = VehicleService(session)
     vehicle = await svc.create(current_user.company_id, data)
-    return await svc.get_detail(vehicle.id, current_user.company_id)
+    result = await svc.get_detail(vehicle.id, current_user.company_id)
+
+    if data.status and data.status.value == "pre_toma":
+        from app.models.company import Company as _Company
+        from app.services.push import send_push
+        companies = (await session.execute(
+            select(_Company).where(_Company.id != current_user.company_id, _Company.is_active == True)
+        )).scalars().all()
+        label = f"{vehicle.brand} {vehicle.model} {vehicle.year}"
+        company_ids = [c.id for c in companies]
+
+        async def _push_pretoma() -> None:
+            async with AsyncSessionLocal() as bg_session:
+                for cid in company_ids:
+                    await send_push(bg_session, cid, f"Nueva Pre-Toma: {label}", f"Publicada ahora en la red", "/")
+                await bg_session.commit()
+
+        asyncio.create_task(_push_pretoma())
+
+    return result
 
 
 @router.get("/{vehicle_id}", response_model=VehicleRead)

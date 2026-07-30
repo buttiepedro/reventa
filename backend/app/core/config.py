@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     carapi_username: str = ""
     carapi_api_token: str = ""
 
+    # VAPID — Web Push Notifications
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_claim_email: str = "noreply@reventa.app"
+
     # Comma-separated list of allowed CORS origins
     cors_origins: str = "http://localhost:5173"
 

@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -7,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session
+from app.core.database import AsyncSessionLocal
 from app.models.client_request import ClientRequest
 from app.models.notification import Notification
 from app.models.stock_offer import StockOffer
@@ -304,6 +306,17 @@ async def submit_offer(
 
     await session.flush()
     await session.refresh(offer, ["offering_company", "vehicle"])
+    _label = f"{offer.vehicle.brand} {offer.vehicle.model} {offer.vehicle.year}"
+    _req_company_id = req.company_id
+
+    async def _push_new_offer() -> None:
+        from app.services.push import send_push
+        async with AsyncSessionLocal() as bg:
+            await send_push(bg, _req_company_id, f"Nueva oferta en La Lonja: {_label}", "Revisá las ofertas recibidas", "/lonja")
+            await bg.commit()
+
+    asyncio.create_task(_push_new_offer())
+
     return StockOfferRead(
         **{k: v for k, v in offer.__dict__.items() if not k.startswith("_") and k not in {"offering_company", "vehicle", "client_request"}},
         offering_company_name=offer.offering_company.name,
@@ -338,7 +351,6 @@ async def update_offer_status(
     await session.refresh(offer, ["offering_company", "vehicle", "client_request"])
 
     if new_status == "accepted":
-        # Notify both parties to rate each other
         vehicle_label = f"{offer.vehicle.brand} {offer.vehicle.model} {offer.vehicle.year}"
         for company_id in (req.company_id, offer.offering_company_id):
             session.add(Notification(
@@ -348,6 +360,15 @@ async def update_offer_status(
                 entity_type="rating_pending",
                 entity_id=offer.id,
             ))
+        _offering_cid = offer.offering_company_id
+
+        async def _push_accepted() -> None:
+            from app.services.push import send_push
+            async with AsyncSessionLocal() as bg:
+                await send_push(bg, _offering_cid, f"¡Oferta aceptada! {vehicle_label}", "Tu oferta en La Lonja fue aceptada.", "/lonja")
+                await bg.commit()
+
+        asyncio.create_task(_push_accepted())
 
     return StockOfferRead(
         **{k: v for k, v in offer.__dict__.items() if not k.startswith("_") and k not in {"offering_company", "vehicle", "client_request"}},

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, catalog, companies, favorites, health, home, lonja, notifications, ratings, share, sheet, tasador, users, vehicles
+from app.api.v1.endpoints import auth, catalog, companies, favorites, health, home, lonja, notifications, push, ratings, share, sheet, tasador, users, vehicles
 
 api_router = APIRouter()
 
@@ -18,3 +18,4 @@ api_router.include_router(lonja.router, prefix="/lonja", tags=["lonja"])
 api_router.include_router(tasador.router, prefix="/tasador", tags=["tasador"])
 api_router.include_router(home.router, prefix="/home", tags=["home"])
 api_router.include_router(ratings.router, prefix="/ratings", tags=["ratings"])
+api_router.include_router(push.router, prefix="/push", tags=["push"])
