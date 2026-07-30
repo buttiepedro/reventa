@@ -1,61 +1,68 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { api } from "@/services/api";
 
 type Mode = "dealer" | "client";
 
 interface AudienceContextValue {
   mode: Mode;
   isClientMode: boolean;
-  clientPin: string | null;
-  setClientPin: (pin: string) => void;
-  enterClientMode: () => void;
-  exitClientMode: (pin: string) => boolean;
-  clearPin: () => void;
+  enterClientMode: (pin: string) => Promise<boolean>;
+  exitClientMode: () => void;
+  setPin: (pin: string) => Promise<void>;
+  deletePin: () => Promise<void>;
 }
 
 const AudienceContext = createContext<AudienceContextValue | null>(null);
 
-const PIN_KEY = "audience_pin";
-
 export function AudienceProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode>("dealer");
-  const [clientPin, setClientPinState] = useState<string | null>(
-    () => sessionStorage.getItem(PIN_KEY)
-  );
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
-  function setClientPin(pin: string) {
-    sessionStorage.setItem(PIN_KEY, pin);
-    setClientPinState(pin);
-  }
+  // Auto-lock on visibility change: if user hides the app while in client mode,
+  // require PIN again when they return
+  useEffect(() => {
+    let hiddenAt: number | null = null;
 
-  function clearPin() {
-    sessionStorage.removeItem(PIN_KEY);
-    setClientPinState(null);
-  }
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        if (modeRef.current === "client") hiddenAt = Date.now();
+      } else {
+        if (hiddenAt !== null) {
+          hiddenAt = null;
+          setMode("dealer");
+        }
+      }
+    };
 
-  function enterClientMode() {
-    setMode("client");
-  }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
-  function exitClientMode(pin: string): boolean {
-    if (!clientPin || pin === clientPin) {
-      setMode("dealer");
-      return true;
+  async function enterClientMode(pin: string): Promise<boolean> {
+    try {
+      const { valid } = await api.post<{ valid: boolean }>("/users/me/audience-pin/verify", { pin });
+      if (valid) setMode("client");
+      return valid;
+    } catch {
+      return false;
     }
-    return false;
+  }
+
+  function exitClientMode() {
+    setMode("dealer");
+  }
+
+  async function setPin(pin: string): Promise<void> {
+    await api.put("/users/me/audience-pin", { pin });
+  }
+
+  async function deletePin(): Promise<void> {
+    await api.delete("/users/me/audience-pin");
   }
 
   return (
-    <AudienceContext.Provider
-      value={{
-        mode,
-        isClientMode: mode === "client",
-        clientPin,
-        setClientPin,
-        enterClientMode,
-        exitClientMode,
-        clearPin,
-      }}
-    >
+    <AudienceContext.Provider value={{ mode, isClientMode: mode === "client", enterClientMode, exitClientMode, setPin, deletePin }}>
       {children}
     </AudienceContext.Provider>
   );

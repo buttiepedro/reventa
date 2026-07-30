@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAudience } from "@/context/AudienceContext";
 
 const tabs = [
   {
@@ -64,10 +65,13 @@ const tabs = [
 ];
 
 export function BottomNav() {
+  const { isClientMode } = useAudience();
+  const visibleTabs = isClientMode ? tabs.filter((t) => t.to === "/mercado") : tabs;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 safe-area-pb">
       <div className="flex items-stretch h-16">
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}

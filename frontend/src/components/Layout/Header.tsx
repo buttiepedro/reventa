@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useAudience } from "@/context/AudienceContext";
@@ -9,10 +10,10 @@ import { notificationService, type AppNotification } from "../../services/notifi
 export function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { isClientMode, clientPin, enterClientMode, exitClientMode, setClientPin } = useAudience();
+  const { isClientMode, enterClientMode, exitClientMode, setPin } = useAudience();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [showPinModal, setShowPinModal] = useState<"exit" | "set" | null>(null);
+  const [showPinModal, setShowPinModal] = useState<"enter" | "set" | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -62,13 +63,9 @@ export function Header() {
 
   const handleAudienceToggle = () => {
     if (isClientMode) {
-      if (clientPin) {
-        setShowPinModal("exit");
-      } else {
-        exitClientMode("");
-      }
+      exitClientMode();
     } else {
-      enterClientMode();
+      setShowPinModal("enter");
     }
   };
 
@@ -207,7 +204,7 @@ export function Header() {
                           onClick={() => { setMenuOpen(false); setShowPinModal("set"); }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
-                          {clientPin ? "Cambiar PIN cliente" : "Configurar PIN cliente"}
+                          Configurar PIN cliente
                         </button>
                       )}
                       <hr className="my-1 border-gray-100" />
@@ -225,26 +222,37 @@ export function Header() {
           )}
         </div>
       </div>
-      {showPinModal === "exit" && (
+
+      {/* PIN modal: enter client mode */}
+      {showPinModal === "enter" && (
         <PinModal
-          title="Salir del modo cliente"
-          subtitle="Ingresá tu PIN para volver al modo concesionaria"
-          onSubmit={(pin) => {
-            const ok = exitClientMode(pin);
-            if (ok) setShowPinModal(null);
+          title="Modo Con Cliente"
+          subtitle="Ingresá tu PIN para activar la vista de cliente"
+          onSubmit={async (pin) => {
+            const ok = await enterClientMode(pin);
+            if (!ok) toast.error("PIN incorrecto");
+            else setShowPinModal(null);
             return ok;
           }}
           onCancel={() => setShowPinModal(null)}
         />
       )}
+
+      {/* PIN modal: set / change PIN */}
       {showPinModal === "set" && (
         <PinModal
-          title="Establecer PIN de cliente"
-          subtitle="Elegí un PIN de 4 dígitos para proteger el modo concesionaria"
-          onSubmit={(pin) => {
-            setClientPin(pin);
-            setShowPinModal(null);
-            return true;
+          title="Configurar PIN de cliente"
+          subtitle="Elegí un PIN de 4–8 dígitos para proteger el modo concesionaria"
+          onSubmit={async (pin) => {
+            try {
+              await setPin(pin);
+              toast.success("PIN guardado");
+              setShowPinModal(null);
+              return true;
+            } catch {
+              toast.error("PIN inválido (4–8 dígitos)");
+              return false;
+            }
           }}
           onCancel={() => setShowPinModal(null)}
         />
