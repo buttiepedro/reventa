@@ -43,6 +43,7 @@ class StockOfferRead(BaseModel):
     client_request_id: uuid.UUID
     offering_company_id: uuid.UUID
     offering_company_name: str
+    offering_company_phone: str | None = None
     vehicle_id: uuid.UUID
     vehicle_label: str
     vehicle_price: Decimal

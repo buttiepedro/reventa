@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { lonjaService, type ClientRequest, type ClientRequestCreate, type StockOffer } from "@/services/lonjaService";
 import { vehicleService } from "@/services/vehicleService";
+import { buildWhatsAppUrl } from "@/utils/whatsapp";
 import { Spinner } from "@/components/ui/Spinner";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/hooks/useAuth";
@@ -349,9 +350,24 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
                             </button>
                           </div>
                         ) : (
-                          <span className={`text-xs font-semibold ${offer.status === "accepted" ? "text-green-600" : "text-gray-400"}`}>
-                            {offer.status === "accepted" ? "Aceptada" : "Rechazada"}
-                          </span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`text-xs font-semibold ${offer.status === "accepted" ? "text-green-600" : "text-gray-400"}`}>
+                              {offer.status === "accepted" ? "Aceptada" : "Rechazada"}
+                            </span>
+                            {offer.status === "accepted" && offer.offering_company_phone && (
+                              <a
+                                href={buildWhatsAppUrl(offer.offering_company_phone, "lonja_offer", {
+                                  vehicle: offer.vehicle_label,
+                                  budget: String(Math.round(Number(req.budget_max))),
+                                })}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] px-2 py-0.5 bg-[#25D366] text-white rounded-full font-semibold"
+                              >
+                                WhatsApp
+                              </a>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -375,15 +391,19 @@ export function Lonja() {
   const [requests, setRequests] = useState<ClientRequest[]>([]);
   const [myVehicles, setMyVehicles] = useState<VehicleListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [matchMyStock, setMatchMyStock] = useState(false);
 
   const loadRequests = () =>
-    lonjaService.listRequests()
+    lonjaService.listRequests(matchMyStock)
       .then(setRequests)
       .catch(() => {})
       .finally(() => setLoading(false));
 
   useEffect(() => {
     loadRequests();
+  }, [matchMyStock]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     vehicleService.listMy().then(setMyVehicles).catch(() => {});
   }, []);
 
@@ -398,7 +418,18 @@ export function Lonja() {
       <TabToggle active={tab} onChange={setTab} />
 
       {tab === "consultas" && (
-        loading ? (
+        <>
+          <button
+            onClick={() => setMatchMyStock((v) => !v)}
+            className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors border ${
+              matchMyStock
+                ? "bg-green-600 text-white border-green-600"
+                : "bg-white text-gray-500 border-gray-200"
+            }`}
+          >
+            Para mi stock
+          </button>
+          {loading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : requests.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
@@ -417,7 +448,8 @@ export function Lonja() {
               />
             ))}
           </div>
-        )
+        )}
+        </>
       )}
 
       {tab === "mis_consultas" && (

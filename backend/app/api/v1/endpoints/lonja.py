@@ -96,13 +96,14 @@ def _rank_score(vehicle: Vehicle, request: ClientRequest) -> Decimal:
 
 @router.get("/requests", response_model=list[ClientRequestRead])
 async def list_open_requests(
+    match_my_stock: bool = False,
     current_user=Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     if not current_user.company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     now = datetime.now(timezone.utc)
-    result = await session.execute(
+    stmt = (
         select(ClientRequest)
         .where(
             ClientRequest.status == "active",
@@ -111,6 +112,20 @@ async def list_open_requests(
         )
         .order_by(ClientRequest.created_at.desc())
     )
+    if match_my_stock:
+        my_stock_sub = (
+            select(Vehicle.id)
+            .where(
+                Vehicle.company_id == current_user.company_id,
+                Vehicle.status == VehicleStatus.AVAILABLE,
+                Vehicle.price_resale <= ClientRequest.budget_max * 1.10,
+                Vehicle.price_resale >= func.coalesce(ClientRequest.budget_min, 0) * 0.90,
+            )
+            .correlate(ClientRequest)
+            .exists()
+        )
+        stmt = stmt.where(my_stock_sub)
+    result = await session.execute(stmt)
     requests = result.scalars().all()
     out = []
     for r in requests:
@@ -231,6 +246,7 @@ async def list_offers(
         out.append(StockOfferRead(
             **{k: v for k, v in o.__dict__.items() if not k.startswith("_") and k not in {"offering_company", "vehicle", "client_request"}},
             offering_company_name=o.offering_company.name,
+            offering_company_phone=o.offering_company.phone,
             vehicle_label=f"{o.vehicle.brand} {o.vehicle.model} {o.vehicle.year}",
             vehicle_price=o.vehicle.price_resale,
         ))
@@ -291,6 +307,7 @@ async def submit_offer(
     return StockOfferRead(
         **{k: v for k, v in offer.__dict__.items() if not k.startswith("_") and k not in {"offering_company", "vehicle", "client_request"}},
         offering_company_name=offer.offering_company.name,
+        offering_company_phone=offer.offering_company.phone,
         vehicle_label=f"{offer.vehicle.brand} {offer.vehicle.model} {offer.vehicle.year}",
         vehicle_price=offer.vehicle.price_resale,
     )
@@ -322,6 +339,7 @@ async def update_offer_status(
     return StockOfferRead(
         **{k: v for k, v in offer.__dict__.items() if not k.startswith("_") and k not in {"offering_company", "vehicle", "client_request"}},
         offering_company_name=offer.offering_company.name,
+        offering_company_phone=offer.offering_company.phone,
         vehicle_label=f"{offer.vehicle.brand} {offer.vehicle.model} {offer.vehicle.year}",
         vehicle_price=offer.vehicle.price_resale,
     )

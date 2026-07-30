@@ -29,6 +29,7 @@ export interface StockOffer {
   client_request_id: string;
   offering_company_id: string;
   offering_company_name: string;
+  offering_company_phone: string | null;
   vehicle_id: string;
   vehicle_label: string;
   vehicle_price: number;
@@ -39,7 +40,8 @@ export interface StockOffer {
 }
 
 export const lonjaService = {
-  listRequests: () => api.get<ClientRequest[]>("/lonja/requests"),
+  listRequests: (matchMyStock = false) =>
+    api.get<ClientRequest[]>(`/lonja/requests${matchMyStock ? "?match_my_stock=true" : ""}`),
   listMyRequests: () => api.get<ClientRequest[]>("/lonja/my-requests"),
   createRequest: (data: ClientRequestCreate) => api.post<ClientRequest>("/lonja/requests", data),
   cancelRequest: (id: string) => api.delete(`/lonja/requests/${id}`),

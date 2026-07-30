@@ -6,10 +6,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from sqlalchemy import update
+
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.seed import seed_super_admin
+from app.models.client_request import ClientRequest
 from app.services.vehicle import VehicleService
 
 
@@ -32,6 +35,28 @@ def _run_migrations() -> None:
     print("Migrations complete.", flush=True)
 
 
+async def _lonja_expiry_loop() -> None:
+    while True:
+        await asyncio.sleep(6 * 3600)  # every 6 hours
+        try:
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    update(ClientRequest)
+                    .where(
+                        ClientRequest.status == "active",
+                        ClientRequest.expires_at <= __import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+                    )
+                    .values(status="expired")
+                    .returning(ClientRequest.id)
+                )
+                expired = len(result.fetchall())
+                await session.commit()
+                if expired:
+                    print(f"[scheduler] Expired {expired} Lonja request(s).", flush=True)
+        except Exception as exc:
+            print(f"[scheduler] Lonja expiry error: {exc}", flush=True)
+
+
 async def _pretoma_expiry_loop() -> None:
     while True:
         await asyncio.sleep(3600)  # every hour
@@ -48,13 +73,16 @@ async def _pretoma_expiry_loop() -> None:
 async def lifespan(app: FastAPI):
     await asyncio.to_thread(_run_migrations)
     await seed_super_admin()
-    task = asyncio.create_task(_pretoma_expiry_loop())
+    task_pretoma = asyncio.create_task(_pretoma_expiry_loop())
+    task_lonja = asyncio.create_task(_lonja_expiry_loop())
     yield
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    task_pretoma.cancel()
+    task_lonja.cancel()
+    for t in (task_pretoma, task_lonja):
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(
