@@ -86,6 +86,7 @@ class VehicleFilters(BaseModel):
     plate: str | None = None
     budget: int | None = None
     budget_tolerance: float = 0.15
+    liquidaciones: bool = False
     page: int = 1
     page_size: int = 20
 
@@ -138,6 +139,9 @@ class VehicleListItem(BaseModel):
     primary_image_url: str | None = None
     is_favorite_company: bool = False
     distance_km: float | None = None
+    is_liquidacion: bool = False
+    liquidacion_price: Decimal | None = None
+    liquidacion_expires_at: datetime | None = None
     created_at: datetime
 
 

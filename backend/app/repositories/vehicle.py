@@ -1,10 +1,12 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Sequence
 
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.company import Company
+from app.models.liquidacion import Liquidacion
 from app.models.vehicle import Vehicle, VehicleStatus
 from app.repositories.base import BaseRepository
 from app.schemas.vehicle import VehicleFilters
@@ -83,6 +85,14 @@ class VehicleRepository(BaseRepository[Vehicle]):
         if filters.budget is not None:
             upper = filters.budget * (1 + filters.budget_tolerance)
             stmt = stmt.where(Vehicle.price_public >= filters.budget, Vehicle.price_public <= upper)
+        if filters.liquidaciones:
+            now = datetime.now(timezone.utc)
+            active_liq = (
+                select(Liquidacion.vehicle_id)
+                .where(Liquidacion.status == "active", Liquidacion.expires_at > now)
+                .scalar_subquery()
+            )
+            stmt = stmt.where(Vehicle.id.in_(active_liq))
         if use_geo and radius_km is not None:
             stmt = stmt.where(dist_col <= radius_km)
 

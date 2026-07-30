@@ -33,6 +33,89 @@ const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
 
 interface Interest { company_id: string; company_name: string; created_at: string }
 
+function horasRestantes(expiresAt: string): string {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "Expirado";
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function LiquidarModal({
+  vehicle,
+  onClose,
+  onSuccess,
+}: {
+  vehicle: VehicleListItem;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [price, setPrice] = useState("");
+  const [saving, setSaving] = useState(false);
+  const maxAllowed = Math.floor(Number(vehicle.price_resale) * 0.85);
+  const entered = Number(price.replace(/[.,\s]/g, ""));
+  const discount = price && entered ? Math.round((1 - entered / Number(vehicle.price_resale)) * 100) : null;
+  const valid = entered > 0 && entered <= maxAllowed;
+
+  const handleSubmit = async () => {
+    if (!valid) return;
+    setSaving(true);
+    try {
+      await vehicleService.publishLiquidacion(vehicle.id, entered);
+      toast.success("Liquidación publicada por 72 horas.");
+      onSuccess();
+      onClose();
+    } catch {
+      toast.error("Error al publicar la liquidación.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Publicar liquidación</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm text-gray-600">
+            {vehicle.brand} {vehicle.model} {vehicle.year} · Precio reventa: <strong>${Number(vehicle.price_resale).toLocaleString()}</strong>
+          </p>
+          <p className="text-xs text-gray-400">Precio máximo permitido (15% de descuento): <strong>${maxAllowed.toLocaleString()}</strong></p>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Precio de liquidación $</label>
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder={`hasta $${maxAllowed.toLocaleString()}`}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+          {discount !== null && (
+            <p className={`text-xs font-semibold ${valid ? "text-green-600" : "text-red-500"}`}>
+              {valid ? `✓ ${discount}% de descuento` : `✗ Mínimo 15% de descuento requerido (${discount ?? 0}% actual)`}
+            </p>
+          )}
+          <p className="text-xs text-gray-400">La oferta expira automáticamente en 72 horas.</p>
+        </div>
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg">Cancelar</button>
+          <button
+            onClick={handleSubmit}
+            disabled={!valid || saving}
+            className="flex-1 py-2 text-sm font-semibold bg-red-500 text-white rounded-lg disabled:opacity-50"
+          >
+            {saving ? "Publicando..." : "Publicar liquidación"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MyStock() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -44,6 +127,7 @@ export function MyStock() {
   const [interestsModal, setInterestsModal] = useState<{ vehicleId: string; label: string } | null>(null);
   const [interests, setInterests] = useState<Interest[]>([]);
   const [loadingInterests, setLoadingInterests] = useState(false);
+  const [liquidarVehicle, setLiquidarVehicle] = useState<VehicleListItem | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -127,6 +211,16 @@ export function MyStock() {
   const handlePublish = async (id: string) => {
     await handleStatusChange(id, "available");
     setInterestsModal(null);
+  };
+
+  const handleCancelLiquidacion = async (id: string) => {
+    try {
+      await vehicleService.cancelLiquidacion(id);
+      toast.success("Liquidación cancelada.");
+      load();
+    } catch {
+      toast.error("Error al cancelar la liquidación.");
+    }
   };
 
   const preTomaVehicles = vehicles.filter((v) => v.status === "pre_toma");
@@ -219,6 +313,11 @@ export function MyStock() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 truncate">{v.brand} {v.model} {v.year}</p>
                   <p className="text-sm text-gray-500">{v.mileage.toLocaleString()} km · ${Number(v.price_resale).toLocaleString()}</p>
+                  {v.is_liquidacion && v.liquidacion_expires_at && (
+                    <p className="text-[10px] text-red-500 font-semibold mt-0.5">
+                      LIQUIDACIÓN · Expira en {horasRestantes(v.liquidacion_expires_at)}
+                    </p>
+                  )}
                 </div>
 
                 <Badge tone={STATUS_TONE[v.status] ?? "gray"} className="hidden sm:inline-flex">
@@ -235,15 +334,35 @@ export function MyStock() {
                   ))}
                 </select>
 
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={() => navigate(`/vehicles/${v.id}`)}>Ver</Button>
                   <Button variant="secondary" size="sm" onClick={() => navigate(`/vehicles/${v.id}/edit`)}>Editar</Button>
+                  {v.status === "available" && !isReventa && (
+                    v.is_liquidacion ? (
+                      <Button variant="danger" size="sm" onClick={() => handleCancelLiquidacion(v.id)}>
+                        Cancelar liquidación
+                      </Button>
+                    ) : (
+                      <Button variant="danger" size="sm" onClick={() => setLiquidarVehicle(v)}>
+                        Liquidar
+                      </Button>
+                    )
+                  )}
                   <Button variant="danger" size="sm" onClick={() => handleDelete(v.id)}>Eliminar</Button>
                 </div>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {/* Liquidar modal */}
+      {liquidarVehicle && (
+        <LiquidarModal
+          vehicle={liquidarVehicle}
+          onClose={() => setLiquidarVehicle(null)}
+          onSuccess={load}
+        />
       )}
 
       {/* Interests modal */}

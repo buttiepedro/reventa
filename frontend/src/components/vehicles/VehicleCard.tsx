@@ -59,6 +59,11 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
               {vehicle.distance_km < 1 ? "< 1 km" : `${Math.round(vehicle.distance_km)} km`}
             </span>
           )}
+          {vehicle.is_liquidacion && (
+            <span className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              LIQUIDACIÓN
+            </span>
+          )}
         </div>
 
         {/* Info */}
@@ -80,9 +85,14 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
             {!isClientMode && (
               <div>
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide">Reventa</p>
-                <p className="font-bold text-blue-600 text-lg leading-none">
-                  ${Number(vehicle.price_resale).toLocaleString()}
-                </p>
+                {vehicle.is_liquidacion && vehicle.liquidacion_price ? (
+                  <>
+                    <p className="text-xs text-gray-400 line-through leading-tight">${Number(vehicle.price_resale).toLocaleString()}</p>
+                    <p className="font-bold text-red-600 text-lg leading-none">${Number(vehicle.liquidacion_price).toLocaleString()}</p>
+                  </>
+                ) : (
+                  <p className="font-bold text-blue-600 text-lg leading-none">${Number(vehicle.price_resale).toLocaleString()}</p>
+                )}
               </div>
             )}
             <div className={isClientMode ? "" : "text-right"}>

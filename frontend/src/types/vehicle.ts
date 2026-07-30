@@ -56,6 +56,10 @@ export interface VehicleListItem {
   is_favorite_company: boolean;
   primary_image_url: string | null;
   distance_km?: number | null;
+  is_liquidacion?: boolean;
+  liquidacion_price?: number | null;
+  liquidacion_expires_at?: string | null;
+  created_at?: string;
 }
 
 export interface VehiclePublic {
@@ -99,6 +103,7 @@ export interface VehicleFilters {
   plate?: string;
   budget?: number;
   budget_tolerance?: number;
+  liquidaciones?: boolean;
 }
 
 export interface VehicleCreate {

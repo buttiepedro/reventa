@@ -32,6 +32,7 @@ function buildQuery(filters: VehicleFilters): string {
   if (filters.plate) params.set("plate", filters.plate);
   if (filters.budget != null) params.set("budget", String(filters.budget));
   if (filters.budget_tolerance != null) params.set("budget_tolerance", String(filters.budget_tolerance));
+  if (filters.liquidaciones) params.set("liquidaciones", "true");
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
@@ -75,6 +76,12 @@ export const vehicleService = {
   removeFavorite: (companyId: string): Promise<void> => api.delete(`/favorites/${companyId}`),
 
   listPreToma: (): Promise<VehicleListItem[]> => api.get("/vehicles/pre-toma"),
+
+  publishLiquidacion: (vehicleId: string, liquidacionPrice: number): Promise<void> =>
+    api.patch(`/vehicles/${vehicleId}/liquidar`, { liquidacion_price: liquidacionPrice }),
+
+  cancelLiquidacion: (vehicleId: string): Promise<void> =>
+    api.delete(`/vehicles/${vehicleId}/liquidar`),
 
   addInterest: (vehicleId: string): Promise<void> => api.post(`/vehicles/${vehicleId}/interest`, {}),
 

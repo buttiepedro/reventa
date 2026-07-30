@@ -135,12 +135,49 @@ function PreTomaFeedTab() {
   );
 }
 
+function horasRestantes(expiresAt: string): string {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "Expirado";
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 function LiquidacionesTab() {
+  const [vehicles, setVehicles] = useState<VehicleListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    vehicleService.listNetwork({ liquidaciones: true, status: "available", page: 1, page_size: 50 })
+      .then((r) => setVehicles(r.items))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
+
+  if (vehicles.length === 0) {
+    return (
+      <div className="bg-white rounded-xl p-8 text-center shadow-sm">
+        <p className="text-3xl mb-2">🔖</p>
+        <p className="text-sm font-semibold text-gray-700">Sin liquidaciones activas</p>
+        <p className="text-xs text-gray-400 mt-1">Vehículos en liquidación (72hs) aparecen acá.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-      <p className="text-3xl mb-2">🏗️</p>
-      <p className="text-sm font-semibold text-gray-700">Próximamente</p>
-      <p className="text-xs text-gray-400 mt-1">Stock a precio de liquidación con timer de 72hs.</p>
+    <div className="space-y-3">
+      {vehicles.map((v) => (
+        <div key={v.id}>
+          {v.liquidacion_expires_at && (
+            <p className="text-[10px] text-red-500 font-semibold mb-1 pl-1">
+              Expira en {horasRestantes(v.liquidacion_expires_at)}
+            </p>
+          )}
+          <VehicleCard vehicle={v} />
+        </div>
+      ))}
     </div>
   );
 }

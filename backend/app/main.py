@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.seed import seed_super_admin
 from app.models.client_request import ClientRequest
+from app.models.liquidacion import Liquidacion
 from app.services.vehicle import VehicleService
 
 
@@ -33,6 +34,28 @@ def _run_migrations() -> None:
     if result.stdout:
         print(result.stdout, flush=True)
     print("Migrations complete.", flush=True)
+
+
+async def _liquidacion_expiry_loop() -> None:
+    while True:
+        await asyncio.sleep(3600)  # every hour
+        try:
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    update(Liquidacion)
+                    .where(
+                        Liquidacion.status == "active",
+                        Liquidacion.expires_at <= __import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+                    )
+                    .values(status="expired")
+                    .returning(Liquidacion.id)
+                )
+                expired = len(result.fetchall())
+                await session.commit()
+                if expired:
+                    print(f"[scheduler] Expired {expired} liquidacion(es).", flush=True)
+        except Exception as exc:
+            print(f"[scheduler] Liquidacion expiry error: {exc}", flush=True)
 
 
 async def _lonja_expiry_loop() -> None:
@@ -75,10 +98,12 @@ async def lifespan(app: FastAPI):
     await seed_super_admin()
     task_pretoma = asyncio.create_task(_pretoma_expiry_loop())
     task_lonja = asyncio.create_task(_lonja_expiry_loop())
+    task_liq = asyncio.create_task(_liquidacion_expiry_loop())
     yield
     task_pretoma.cancel()
     task_lonja.cancel()
-    for t in (task_pretoma, task_lonja):
+    task_liq.cancel()
+    for t in (task_pretoma, task_lonja, task_liq):
         try:
             await t
         except asyncio.CancelledError:

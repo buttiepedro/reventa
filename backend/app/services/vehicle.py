@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import s3
 from app.models.company import Company
+from app.models.liquidacion import Liquidacion
 from app.models.notification import Notification
 from app.models.vehicle import Vehicle, VehicleStatus
 from app.repositories.company_favorite import CompanyFavoriteRepository
@@ -75,6 +76,19 @@ class VehicleService:
         fav_ids = await self.fav_repo.get_favorites(current_company_id)
         return await self._build_read(vehicle, vehicle.company.name, fav_ids)
 
+    async def _liq_map(self, vehicle_ids: list[uuid.UUID]) -> dict[uuid.UUID, Liquidacion]:
+        if not vehicle_ids:
+            return {}
+        now = datetime.now(timezone.utc)
+        rows = (await self.session.execute(
+            select(Liquidacion).where(
+                Liquidacion.vehicle_id.in_(vehicle_ids),
+                Liquidacion.status == "active",
+                Liquidacion.expires_at > now,
+            )
+        )).scalars().all()
+        return {r.vehicle_id: r for r in rows}
+
     async def get_network_list(
         self,
         current_company_id: uuid.UUID,
@@ -101,11 +115,14 @@ class VehicleService:
             radius_km=radius_km,
         )
 
+        liq_map = await self._liq_map([v.id for v, _ in vehicles_with_dist])
+
         items = []
         for v, dist_km in vehicles_with_dist:
             await self.repo.session.refresh(v, ["images", "company"])
             primary = next((img for img in v.images if img.is_primary), v.images[0] if v.images else None)
             primary_url = await s3.generate_view_url(primary.s3_key) if primary else None
+            liq = liq_map.get(v.id)
             items.append(
                 VehicleListItem(
                     **{k: val for k, val in v.__dict__.items() if not k.startswith("_") and k not in {"images", "company"}},
@@ -113,6 +130,9 @@ class VehicleService:
                     primary_image_url=primary_url,
                     is_favorite_company=v.company_id in fav_ids,
                     distance_km=dist_km,
+                    is_liquidacion=liq is not None,
+                    liquidacion_price=liq.liquidation_price if liq else None,
+                    liquidacion_expires_at=liq.expires_at if liq else None,
                 )
             )
 
@@ -126,17 +146,22 @@ class VehicleService:
 
     async def get_my_list(self, company_id: uuid.UUID) -> list[VehicleListItem]:
         vehicles = await self.repo.get_by_company(company_id)
+        liq_map = await self._liq_map([v.id for v in vehicles])
         items = []
         for v in vehicles:
             await self.repo.session.refresh(v, ["images", "company"])
             primary = next((img for img in v.images if img.is_primary), v.images[0] if v.images else None)
             primary_url = await s3.generate_view_url(primary.s3_key) if primary else None
+            liq = liq_map.get(v.id)
             items.append(
                 VehicleListItem(
                     **{k: val for k, val in v.__dict__.items() if not k.startswith("_") and k not in {"images", "company"}},
                     company_name=v.company.name,
                     primary_image_url=primary_url,
                     is_favorite_company=False,
+                    is_liquidacion=liq is not None,
+                    liquidacion_price=liq.liquidation_price if liq else None,
+                    liquidacion_expires_at=liq.expires_at if liq else None,
                 )
             )
         return items
@@ -186,6 +211,13 @@ class VehicleService:
         vehicle.status = data.status
         if vehicle.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
             self._set_pretoma_expiry(vehicle)
+        if vehicle.status == VehicleStatus.SOLD:
+            from sqlalchemy import update as sa_update
+            await self.session.execute(
+                sa_update(Liquidacion)
+                .where(Liquidacion.vehicle_id == vehicle_id, Liquidacion.status == "active")
+                .values(status="cancelled")
+            )
         saved = await self.repo.save(vehicle)
         if saved.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
             await self._notify_favorites_pre_toma(saved)

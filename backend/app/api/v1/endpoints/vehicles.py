@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -56,6 +57,7 @@ async def list_network_vehicles(
     plate: Annotated[str | None, Query(max_length=20)] = None,
     budget: Annotated[int | None, Query(ge=0)] = None,
     budget_tolerance: Annotated[float, Query(ge=0, le=1)] = 0.15,
+    liquidaciones: Annotated[bool, Query()] = False,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -74,6 +76,7 @@ async def list_network_vehicles(
         plate=plate,
         budget=budget,
         budget_tolerance=budget_tolerance,
+        liquidaciones=liquidaciones,
         page=page,
         page_size=page_size,
     )
@@ -148,6 +151,83 @@ async def update_vehicle_status(
     svc = VehicleService(session)
     vehicle = await svc.update_status(vehicle_id, company_id, data, is_super_admin=is_super)
     return await svc.get_detail(vehicle.id, company_id)
+
+
+# ─── Liquidaciones ───────────────────────────────────────────
+
+
+class LiquidarRequest(BaseModel):
+    liquidacion_price: Decimal
+
+
+@router.patch("/{vehicle_id}/liquidar", status_code=status.HTTP_204_NO_CONTENT)
+async def publish_liquidacion(
+    vehicle_id: uuid.UUID,
+    data: LiquidarRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from datetime import timedelta, timezone as tz
+    from app.models.liquidacion import Liquidacion
+
+    if current_user.role == Role.REVENTA:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reventa no puede liquidar")
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+    vehicle = await VehicleService(session).get_or_404(vehicle_id)
+    if vehicle.company_id != current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    if vehicle.status != VehicleStatus.AVAILABLE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo vehículos disponibles pueden liquidarse")
+
+    threshold = vehicle.price_resale * Decimal("0.85")
+    if data.liquidacion_price > threshold:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El precio de liquidación debe ser al menos 15% menor al precio de venta",
+        )
+
+    # Cancel any existing active liquidacion for this vehicle
+    existing = (await session.execute(
+        select(Liquidacion).where(Liquidacion.vehicle_id == vehicle_id, Liquidacion.status == "active")
+    )).scalar_one_or_none()
+    if existing:
+        existing.status = "cancelled"
+        await session.flush()
+
+    liq = Liquidacion(
+        vehicle_id=vehicle_id,
+        company_id=current_user.company_id,
+        liquidation_price=data.liquidacion_price,
+        reference_price=vehicle.price_resale,
+        status="active",
+        expires_at=datetime.now(tz.utc) + timedelta(hours=72),
+    )
+    session.add(liq)
+
+
+@router.delete("/{vehicle_id}/liquidar", status_code=status.HTTP_204_NO_CONTENT)
+async def cancel_liquidacion(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from app.models.liquidacion import Liquidacion
+
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+    liq = (await session.execute(
+        select(Liquidacion).where(
+            Liquidacion.vehicle_id == vehicle_id,
+            Liquidacion.company_id == current_user.company_id,
+            Liquidacion.status == "active",
+        )
+    )).scalar_one_or_none()
+    if not liq:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sin liquidación activa")
+    liq.status = "cancelled"
 
 
 @router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
