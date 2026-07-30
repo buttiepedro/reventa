@@ -78,6 +78,11 @@ class VehicleRepository(BaseRepository[Vehicle]):
             stmt = stmt.where(Vehicle.condition == filters.condition)
         if filters.company_id:
             stmt = stmt.where(Vehicle.company_id == filters.company_id)
+        if filters.plate:
+            stmt = stmt.where(Vehicle.plate.ilike(f"%{filters.plate}%"))
+        if filters.budget is not None:
+            upper = filters.budget * (1 + filters.budget_tolerance)
+            stmt = stmt.where(Vehicle.price_public >= filters.budget, Vehicle.price_public <= upper)
         if use_geo and radius_km is not None:
             stmt = stmt.where(dist_col <= radius_km)
 

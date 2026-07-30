@@ -53,6 +53,9 @@ async def list_network_vehicles(
     lat: Annotated[float | None, Query()] = None,
     lng: Annotated[float | None, Query()] = None,
     radius_km: Annotated[float | None, Query(ge=1, le=500)] = None,
+    plate: Annotated[str | None, Query(max_length=20)] = None,
+    budget: Annotated[int | None, Query(ge=0)] = None,
+    budget_tolerance: Annotated[float, Query(ge=0, le=1)] = 0.15,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -68,6 +71,9 @@ async def list_network_vehicles(
         condition=VehicleCondition(condition) if condition else None,
         status=VehicleStatus(status_filter) if status_filter else None,
         company_id=company_id,
+        plate=plate,
+        budget=budget,
+        budget_tolerance=budget_tolerance,
         page=page,
         page_size=page_size,
     )

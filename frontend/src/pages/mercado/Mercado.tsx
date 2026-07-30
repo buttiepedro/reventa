@@ -32,6 +32,50 @@ const RADIUS_OPTIONS: { label: string; value: number | null }[] = [
   { label: "Todo el país", value: null },
 ];
 
+// Argentine plate patterns: ABC123 (old) or AB123CD (Mercosur)
+const PLATE_RE = /^[A-Za-z]{2,3}[-\s]?\d{3}[-\s]?[A-Za-z]{0,2}$/;
+
+type SearchMode = "text" | "budget" | "plate" | null;
+
+function detectMode(q: string): SearchMode {
+  if (!q.trim()) return null;
+  const clean = q.trim().replace(/[.,\s]/g, "");
+  if (/^\d+$/.test(clean)) return "budget";
+  if (PLATE_RE.test(q.trim())) return "plate";
+  return "text";
+}
+
+function SmartSearch({ onSearch }: { onSearch: (mode: SearchMode, value: string) => void }) {
+  const [query, setQuery] = useState("");
+  const mode = detectMode(query);
+
+  const hints: Record<NonNullable<SearchMode>, string> = {
+    budget: "Buscando vehículos dentro de ese presupuesto (±15%)",
+    plate: "Buscando por dominio/patente",
+    text: "Buscando por marca y modelo",
+  };
+
+  const handleChange = (val: string) => {
+    setQuery(val);
+    onSearch(detectMode(val), val.trim());
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="Buscar marca, modelo, patente o presupuesto..."
+        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+      />
+      {mode && (
+        <p className="mt-1 text-[11px] text-gray-400 pl-1">{hints[mode]}</p>
+      )}
+    </div>
+  );
+}
+
 type Tab = "stock" | "pre_toma" | "liquidaciones";
 
 function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
@@ -113,12 +157,27 @@ export function Mercado() {
   const geoRef = useRef(userLocation);
   geoRef.current = userLocation;
 
-  const loadStock = useCallback(async (f: VehicleFilters, loc: typeof userLocation, radius: number | null) => {
+  const [searchExtra, setSearchExtra] = useState<VehicleFilters>({});
+
+  const handleSearch = useCallback((mode: SearchMode, value: string) => {
+    if (!value) { setSearchExtra({}); return; }
+    if (mode === "budget") {
+      const n = parseInt(value.replace(/[.,\s]/g, ""), 10);
+      setSearchExtra(isNaN(n) ? {} : { budget: n });
+    } else if (mode === "plate") {
+      setSearchExtra({ plate: value });
+    } else {
+      // text: split into brand/model guess — just use model field for simplicity
+      setSearchExtra({ model: value });
+    }
+  }, []);
+
+  const loadStock = useCallback(async (f: VehicleFilters, loc: typeof userLocation, radius: number | null, extra: VehicleFilters) => {
     setLoading(true);
     setError(null);
     try {
-      const extra: VehicleFilters = loc ? { lat: loc.lat, lng: loc.lng, ...(radius != null ? { radius_km: radius } : {}) } : {};
-      setResult(await vehicleService.listNetwork({ ...f, ...extra }));
+      const geoExtra: VehicleFilters = loc ? { lat: loc.lat, lng: loc.lng, ...(radius != null ? { radius_km: radius } : {}) } : {};
+      setResult(await vehicleService.listNetwork({ ...f, ...geoExtra, ...extra }));
     } catch {
       setError("Error al cargar los vehículos.");
     } finally {
@@ -127,8 +186,8 @@ export function Mercado() {
   }, []);
 
   useEffect(() => {
-    if (tab === "stock") loadStock(filters, userLocation, activeRadius);
-  }, [tab, filters, userLocation, activeRadius, loadStock]);
+    if (tab === "stock") loadStock(filters, userLocation, activeRadius, searchExtra);
+  }, [tab, filters, userLocation, activeRadius, searchExtra, loadStock]);
 
   const handleGeolocate = () => {
     if (!navigator.geolocation) { toast.error("Tu navegador no soporta geolocalización."); return; }
@@ -160,6 +219,7 @@ export function Mercado() {
 
       {tab === "stock" && (
         <>
+          <SmartSearch onSearch={handleSearch} />
           <div className="flex gap-2 items-center">
             <div className="flex-1">
               <FilterBar filters={filters} onChange={setFilters} />

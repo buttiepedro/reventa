@@ -83,6 +83,9 @@ class VehicleFilters(BaseModel):
     condition: VehicleCondition | None = None
     status: VehicleStatus | None = VehicleStatus.AVAILABLE
     company_id: uuid.UUID | None = None
+    plate: str | None = None
+    budget: int | None = None
+    budget_tolerance: float = 0.15
     page: int = 1
     page_size: int = 20
 

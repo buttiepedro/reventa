@@ -96,6 +96,9 @@ export interface VehicleFilters {
   lat?: number;
   lng?: number;
   radius_km?: number;
+  plate?: string;
+  budget?: number;
+  budget_tolerance?: number;
 }
 
 export interface VehicleCreate {
