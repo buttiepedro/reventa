@@ -50,6 +50,9 @@ async def list_network_vehicles(
     company_id: Annotated[uuid.UUID | None, Query()] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    lat: Annotated[float | None, Query()] = None,
+    lng: Annotated[float | None, Query()] = None,
+    radius_km: Annotated[float | None, Query(ge=1, le=500)] = None,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -70,7 +73,10 @@ async def list_network_vehicles(
     )
     if not current_user.company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
-    return await VehicleService(session).get_network_list(current_user.company_id, filters)
+    return await VehicleService(session).get_network_list(
+        current_user.company_id, filters,
+        geo_lat=lat, geo_lng=lng, radius_km=radius_km,
+    )
 
 
 @router.get("/my", response_model=list[VehicleListItem])

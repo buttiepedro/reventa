@@ -26,6 +26,9 @@ function buildQuery(filters: VehicleFilters): string {
   if (filters.company_id) params.set("company_id", filters.company_id);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.page_size) params.set("page_size", String(filters.page_size));
+  if (filters.lat != null) params.set("lat", String(filters.lat));
+  if (filters.lng != null) params.set("lng", String(filters.lng));
+  if (filters.radius_km != null) params.set("radius_km", String(filters.radius_km));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }

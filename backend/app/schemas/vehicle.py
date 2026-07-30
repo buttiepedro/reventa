@@ -134,6 +134,7 @@ class VehicleListItem(BaseModel):
     status: VehicleStatus
     primary_image_url: str | None = None
     is_favorite_company: bool = False
+    distance_km: float | None = None
     created_at: datetime
 
 

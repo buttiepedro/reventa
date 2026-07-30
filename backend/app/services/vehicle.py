@@ -75,23 +75,34 @@ class VehicleService:
         fav_ids = await self.fav_repo.get_favorites(current_company_id)
         return await self._build_read(vehicle, vehicle.company.name, fav_ids)
 
-    async def get_network_list(self, current_company_id: uuid.UUID, filters: VehicleFilters) -> PaginatedResponse[VehicleListItem]:
+    async def get_network_list(
+        self,
+        current_company_id: uuid.UUID,
+        filters: VehicleFilters,
+        geo_lat: float | None = None,
+        geo_lng: float | None = None,
+        radius_km: float | None = None,
+    ) -> PaginatedResponse[VehicleListItem]:
         fav_ids = await self.fav_repo.get_favorites(current_company_id)
 
-        # Look up viewer's coordinates for geo-ordered results
-        row = (await self.session.execute(
-            select(Company.lat, Company.lng).where(Company.id == current_company_id)
-        )).one_or_none()
-        viewer_lat = float(row.lat) if row and row.lat is not None else None
-        viewer_lng = float(row.lng) if row and row.lng is not None else None
+        # Use GPS coords from request when available; fall back to company's stored location
+        if geo_lat is not None and geo_lng is not None:
+            viewer_lat, viewer_lng = geo_lat, geo_lng
+        else:
+            row = (await self.session.execute(
+                select(Company.lat, Company.lng).where(Company.id == current_company_id)
+            )).one_or_none()
+            viewer_lat = float(row.lat) if row and row.lat is not None else None
+            viewer_lng = float(row.lng) if row and row.lng is not None else None
 
-        vehicles, total = await self.repo.get_network_list(
+        vehicles_with_dist, total = await self.repo.get_network_list(
             current_company_id, fav_ids, filters,
             viewer_lat=viewer_lat, viewer_lng=viewer_lng,
+            radius_km=radius_km,
         )
 
         items = []
-        for v in vehicles:
+        for v, dist_km in vehicles_with_dist:
             await self.repo.session.refresh(v, ["images", "company"])
             primary = next((img for img in v.images if img.is_primary), v.images[0] if v.images else None)
             primary_url = await s3.generate_view_url(primary.s3_key) if primary else None
@@ -101,6 +112,7 @@ class VehicleService:
                     company_name=v.company.name,
                     primary_image_url=primary_url,
                     is_favorite_company=v.company_id in fav_ids,
+                    distance_km=dist_km,
                 )
             )
 

@@ -50,12 +50,15 @@ class VehicleRepository(BaseRepository[Vehicle]):
         filters: VehicleFilters,
         viewer_lat: float | None = None,
         viewer_lng: float | None = None,
-    ) -> tuple[list[Vehicle], int]:
+        radius_km: float | None = None,
+    ) -> tuple[list[tuple[Vehicle, float | None]], int]:
         use_geo = viewer_lat is not None and viewer_lng is not None
 
-        stmt = select(Vehicle)
         if use_geo:
-            stmt = stmt.join(Company, Vehicle.company_id == Company.id)
+            dist_col = _haversine_km(viewer_lat, viewer_lng, Company.lat, Company.lng).label("distance_km")  # type: ignore[arg-type]
+            stmt = select(Vehicle, dist_col).join(Company, Vehicle.company_id == Company.id)
+        else:
+            stmt = select(Vehicle)
 
         if filters.status is not None:
             stmt = stmt.where(Vehicle.status == filters.status)
@@ -75,19 +78,21 @@ class VehicleRepository(BaseRepository[Vehicle]):
             stmt = stmt.where(Vehicle.condition == filters.condition)
         if filters.company_id:
             stmt = stmt.where(Vehicle.company_id == filters.company_id)
+        if use_geo and radius_km is not None:
+            stmt = stmt.where(dist_col <= radius_km)
 
         count_result = await self.session.execute(select(func.count()).select_from(stmt.subquery()))
         total = count_result.scalar_one()
 
-        # Favorites first; if viewer has geo → order by distance; else newest
         is_fav = case((Vehicle.company_id.in_(favorite_ids), 0), else_=1) if favorite_ids else case((Vehicle.id == Vehicle.id, 1), else_=1)  # noqa: E501
         if use_geo:
-            dist = _haversine_km(viewer_lat, viewer_lng, Company.lat, Company.lng)  # type: ignore[arg-type]
-            stmt = stmt.order_by(is_fav, dist.nulls_last(), Vehicle.created_at.desc())
+            stmt = stmt.order_by(is_fav, dist_col.nulls_last(), Vehicle.created_at.desc())
         else:
             stmt = stmt.order_by(is_fav, Vehicle.created_at.desc())
 
         stmt = stmt.offset((filters.page - 1) * filters.page_size).limit(filters.page_size)
 
         result = await self.session.execute(stmt)
-        return list(result.scalars().all()), total
+        if use_geo:
+            return [(row[0], float(row[1]) if row[1] is not None else None) for row in result.all()], total
+        return [(v, None) for v in result.scalars().all()], total

@@ -55,6 +55,7 @@ export interface VehicleListItem {
   status: VehicleStatus;
   is_favorite_company: boolean;
   primary_image_url: string | null;
+  distance_km?: number | null;
 }
 
 export interface VehiclePublic {
@@ -92,6 +93,9 @@ export interface VehicleFilters {
   company_id?: string;
   page?: number;
   page_size?: number;
+  lat?: number;
+  lng?: number;
+  radius_km?: number;
 }
 
 export interface VehicleCreate {

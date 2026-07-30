@@ -54,6 +54,11 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
               ★ Favorita
             </span>
           )}
+          {vehicle.distance_km != null && (
+            <span className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+              {vehicle.distance_km < 1 ? "< 1 km" : `${Math.round(vehicle.distance_km)} km`}
+            </span>
+          )}
         </div>
 
         {/* Info */}
