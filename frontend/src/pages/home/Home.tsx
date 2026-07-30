@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/services/api";
 import { notificationService, type AppNotification } from "@/services/notificationService";
+import { RatingModal } from "@/components/RatingModal";
 
 interface InboxItem {
   id: string;
@@ -82,6 +83,7 @@ const ALERT_ICON: Record<string, string> = {
   favorite_request: "🤝",
   favorite_accepted: "✅",
   direct_match: "🎯",
+  rating_pending: "⭐",
 };
 
 export function Home() {
@@ -95,6 +97,7 @@ export function Home() {
   });
   const [alerts, setAlerts] = useState<AppNotification[]>([]);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [ratingModal, setRatingModal] = useState<{ offerId: string; companyId: string; companyName: string } | null>(null);
 
   const loadData = () => {
     notificationService.list().then(setAlerts).catch(() => {});
@@ -121,6 +124,10 @@ export function Home() {
 
   const handleAlertClick = (n: AppNotification) => {
     notificationService.markRead(n.id).catch(() => {});
+    if (n.entity_type === "rating_pending" && n.entity_id) {
+      setRatingModal({ offerId: n.entity_id, companyId: "", companyName: "la otra agencia" });
+      return;
+    }
     if (n.entity_type === "pre_toma" || n.entity_type === "pre_toma_interest") navigate("/mercado");
     else if (n.entity_type?.startsWith("favorite")) navigate("/agencia");
     else if (n.entity_type === "direct_match") navigate("/lonja");
@@ -220,6 +227,15 @@ export function Home() {
           <p className="text-sm font-medium text-gray-700">Todo al día</p>
           <p className="text-xs text-gray-400 mt-1">No tenés alertas pendientes</p>
         </div>
+      )}
+
+      {ratingModal && (
+        <RatingModal
+          offerId={ratingModal.offerId}
+          ratedCompanyId={ratingModal.companyId}
+          ratedCompanyName={ratingModal.companyName}
+          onClose={() => setRatingModal(null)}
+        />
       )}
     </div>
   );

@@ -33,6 +33,7 @@ class Company(Base):
     # Reputation
     avg_rating: Mapped[Decimal | None] = mapped_column(Numeric(2, 1), nullable=True)
     total_ratings: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    reputation_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

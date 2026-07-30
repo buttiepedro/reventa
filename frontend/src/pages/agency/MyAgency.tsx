@@ -3,11 +3,14 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { companyService, type CompanyProfileUpdate, type RadarEntryCreate } from "@/services/companyService";
 import { favoriteService, type FavoriteRequest } from "@/services/favoriteService";
+import { api } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
+import { ReputationBadge } from "@/components/ReputationBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import { Input } from "@/components/ui/Input";
 import type { Company, CompanyProfile, RadarEntry } from "@/types";
 
-type Tab = "perfil" | "conexiones" | "radar";
+type Tab = "perfil" | "conexiones" | "radar" | "reputacion";
 
 // ─── Tab Toggle ──────────────────────────────────────────────
 
@@ -16,6 +19,7 @@ function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
     { id: "perfil", label: "Perfil" },
     { id: "conexiones", label: "Conexiones" },
     { id: "radar", label: "Radar" },
+    { id: "reputacion", label: "Reputación" },
   ];
   return (
     <div className="flex gap-2">
@@ -362,6 +366,78 @@ function RadarTab() {
   );
 }
 
+// ─── Reputación Tab ──────────────────────────────────────────
+
+interface RatingSummary {
+  avg_rating: number | null;
+  total_ratings: number;
+  reputation_score: number | null;
+  recent: { id: string; rater_name: string; rating: number; comment: string | null; created_at: string }[];
+}
+
+function ReputacionTab() {
+  const { user } = useAuth();
+  const [data, setData] = useState<RatingSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.company_id) return;
+    api.get<RatingSummary>(`/ratings/${user.company_id}`)
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user?.company_id]);
+
+  if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
+
+  if (!data || data.total_ratings === 0) {
+    return (
+      <div className="bg-white rounded-xl p-8 text-center shadow-sm">
+        <p className="text-3xl mb-2">⭐</p>
+        <p className="text-sm font-semibold text-gray-700">Sin calificaciones aún</p>
+        <p className="text-xs text-gray-400 mt-1">Las calificaciones aparecen después de completar operaciones en La Lonja.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl shadow-sm p-5 space-y-3">
+        <div className="flex items-center gap-3">
+          <ReputationBadge score={data.reputation_score} avg={data.avg_rating ?? undefined} count={data.total_ratings} size="md" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Promedio</p>
+            <p className="font-bold text-gray-900">{data.avg_rating?.toFixed(1) ?? "—"} / 5</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Calificaciones</p>
+            <p className="font-bold text-gray-900">{data.total_ratings}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-gray-100">
+          <p className="text-xs font-semibold text-gray-500">Últimas calificaciones</p>
+        </div>
+        {data.recent.map((r) => (
+          <div key={r.id} className="px-4 py-3 border-b border-gray-50 last:border-0">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-gray-800">{r.rater_name}</p>
+                {r.comment && <p className="text-xs text-gray-500 mt-0.5 italic">"{r.comment}"</p>}
+              </div>
+              <span className="text-yellow-500 font-bold text-sm shrink-0 ml-2">{"★".repeat(r.rating)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ────────────────────────────────────────────────────
 
 export function MyAgency() {
@@ -374,6 +450,7 @@ export function MyAgency() {
       {tab === "perfil" && <ProfileTab />}
       {tab === "conexiones" && <ConexionesTab />}
       {tab === "radar" && <RadarTab />}
+      {tab === "reputacion" && <ReputacionTab />}
     </div>
   );
 }

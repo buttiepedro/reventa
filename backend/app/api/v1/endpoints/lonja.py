@@ -335,7 +335,20 @@ async def update_offer_status(
 
     offer.status = new_status
     await session.flush()
-    await session.refresh(offer, ["offering_company", "vehicle"])
+    await session.refresh(offer, ["offering_company", "vehicle", "client_request"])
+
+    if new_status == "accepted":
+        # Notify both parties to rate each other
+        vehicle_label = f"{offer.vehicle.brand} {offer.vehicle.model} {offer.vehicle.year}"
+        for company_id in (req.company_id, offer.offering_company_id):
+            session.add(Notification(
+                company_id=company_id,
+                title=f"Calificá la operación: {vehicle_label}",
+                body="¿Cómo fue la experiencia? Tu calificación ayuda a construir confianza en la red.",
+                entity_type="rating_pending",
+                entity_id=offer.id,
+            ))
+
     return StockOfferRead(
         **{k: v for k, v in offer.__dict__.items() if not k.startswith("_") and k not in {"offering_company", "vehicle", "client_request"}},
         offering_company_name=offer.offering_company.name,
