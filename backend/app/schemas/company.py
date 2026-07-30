@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -41,6 +42,9 @@ class CompanyProfile(BaseModel):
     slug: str
     is_active: bool
     cuit: str | None
+    cuit_verified: bool
+    cuit_submitted_at: datetime | None
+    cuit_review_notes: str | None
     verification_status: str
     logo_url: str | None
     description: str | None
@@ -55,13 +59,38 @@ class CompanyProfile(BaseModel):
 
 class CompanyProfileUpdate(BaseModel):
     name: str | None = None
-    cuit: str | None = None
     phone: str | None = None
     description: str | None = None
     address_text: str | None = None
     lat: Decimal | None = None
     lng: Decimal | None = None
-    logo_url: str | None = None
+
+
+def _validate_cuit_digits(cuit: str) -> bool:
+    digits = re.sub(r"[^0-9]", "", cuit)
+    if len(digits) != 11:
+        return False
+    weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
+    total = sum(int(d) * w for d, w in zip(digits[:10], weights))
+    remainder = total % 11
+    verifier = 0 if remainder == 0 else (9 if remainder == 1 else 11 - remainder)
+    return int(digits[-1]) == verifier
+
+
+class CuitSubmit(BaseModel):
+    cuit: str
+
+    @field_validator("cuit")
+    @classmethod
+    def validate_cuit(cls, v: str) -> str:
+        if not _validate_cuit_digits(v):
+            raise ValueError("CUIT inválido. Verificá el formato y el dígito verificador.")
+        return v
+
+
+class VerifyCuitRequest(BaseModel):
+    approved: bool
+    reason: str | None = None
 
 
 class RadarEntryCreate(BaseModel):

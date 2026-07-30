@@ -110,6 +110,14 @@ async def create_vehicle(
     if current_user.role == Role.REVENTA:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reventa Autorizado no puede publicar vehículos")
     assert current_user.company_id is not None
+    from app.models.company import Company
+    company_row = await session.execute(select(Company).where(Company.id == current_user.company_id))
+    company = company_row.scalar_one_or_none()
+    if company and not company.cuit_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu empresa necesita verificar el CUIT antes de publicar vehículos.",
+        )
     svc = VehicleService(session)
     vehicle = await svc.create(current_user.company_id, data)
     return await svc.get_detail(vehicle.id, current_user.company_id)

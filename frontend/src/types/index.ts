@@ -24,6 +24,9 @@ export interface CompanyProfile {
   slug: string;
   is_active: boolean;
   cuit: string | null;
+  cuit_verified: boolean;
+  cuit_submitted_at: string | null;
+  cuit_review_notes: string | null;
   verification_status: string;
   logo_url: string | null;
   description: string | null;

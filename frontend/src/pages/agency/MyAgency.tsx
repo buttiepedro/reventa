@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { companyService, type CompanyProfileUpdate, type RadarEntryCreate } from "@/services/companyService";
@@ -38,6 +38,136 @@ function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
   );
 }
 
+// ─── CUIT status banner ──────────────────────────────────────
+
+function CuitBanner({ profile, onSubmit }: { profile: CompanyProfile; onSubmit: (cuit: string) => Promise<void> }) {
+  const [cuit, setCuit] = useState(profile.cuit ?? "");
+  const [saving, setSaving] = useState(false);
+
+  if (profile.cuit_verified) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 flex items-center gap-2">
+        <span className="text-base">✓</span>
+        <span>CUIT verificado</span>
+      </div>
+    );
+  }
+
+  if (profile.cuit && profile.cuit_submitted_at && !profile.cuit_review_notes) {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
+        Tu CUIT está en revisión. Te notificaremos cuando sea aprobado.
+      </div>
+    );
+  }
+
+  if (profile.cuit_review_notes) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-3 space-y-2">
+        <p className="text-sm text-red-700">
+          <strong>CUIT rechazado.</strong> Motivo: {profile.cuit_review_notes}. Corregilo y volvé a enviar.
+        </p>
+        <div className="flex gap-2">
+          <input
+            value={cuit}
+            onChange={(e) => setCuit(e.target.value)}
+            placeholder="20-12345678-9"
+            className="flex-1 rounded-lg border border-red-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+          />
+          <button
+            onClick={async () => { setSaving(true); try { await onSubmit(cuit); } finally { setSaving(false); } }}
+            disabled={saving || !cuit}
+            className="px-3 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
+          >
+            {saving ? "..." : "Reenviar"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+      <p className="text-sm text-amber-700">
+        <strong>Completá tu CUIT</strong> para poder publicar vehículos en la red.
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={cuit}
+          onChange={(e) => setCuit(e.target.value)}
+          placeholder="20-12345678-9"
+          className="flex-1 rounded-lg border border-amber-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+        />
+        <button
+          onClick={async () => { setSaving(true); try { await onSubmit(cuit); } finally { setSaving(false); } }}
+          disabled={saving || !cuit}
+          className="px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
+        >
+          {saving ? "..." : "Enviar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Logo uploader ───────────────────────────────────────────
+
+function LogoUploader({ profile, onLogoChange }: { profile: CompanyProfile; onLogoChange: (url: string | null) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res = await companyService.uploadLogo(file);
+      onLogoChange(res.logo_url);
+      toast.success("Logo actualizado.");
+    } catch (err: unknown) {
+      const detail = (err as { detail?: string }).detail ?? "Error al subir el logo.";
+      toast.error(detail);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await companyService.deleteLogo();
+      onLogoChange(null);
+      toast.success("Logo eliminado.");
+    } catch {
+      toast.error("Error al eliminar el logo.");
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4">
+      {profile.logo_url ? (
+        <img src={profile.logo_url} alt="Logo" className="w-16 h-16 rounded-xl object-cover border border-gray-100" />
+      ) : (
+        <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center text-2xl font-bold text-gray-400">
+          {profile.name[0]}
+        </div>
+      )}
+      <div>
+        <label className="cursor-pointer text-sm text-blue-600 hover:underline">
+          {uploading ? "Subiendo..." : profile.logo_url ? "Cambiar logo" : "Subir logo"}
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} disabled={uploading} />
+        </label>
+        {profile.logo_url && (
+          <button onClick={handleDelete} className="block text-xs text-red-400 mt-1 hover:text-red-600">
+            Eliminar
+          </button>
+        )}
+        <p className="text-xs text-gray-400 mt-0.5">JPG, PNG o WEBP · máx 2MB</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Profile Tab ─────────────────────────────────────────────
 
 function ProfileTab() {
@@ -46,18 +176,18 @@ function ProfileTab() {
   const [form, setForm] = useState<CompanyProfileUpdate>({});
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const reload = () =>
     companyService.getMyProfile()
-      .then((p) => { setProfile(p); setForm({ name: p.name, cuit: p.cuit ?? "", phone: p.phone ?? "", description: p.description ?? "", address_text: p.address_text ?? "", lat: p.lat ?? undefined, lng: p.lng ?? undefined }); })
+      .then((p) => { setProfile(p); setForm({ name: p.name, phone: p.phone ?? "", description: p.description ?? "", address_text: p.address_text ?? "", lat: p.lat ?? undefined, lng: p.lng ?? undefined }); })
       .catch(() => toast.error("No se pudo cargar el perfil."));
-  }, []);
+
+  useEffect(() => { reload(); }, []);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const payload: CompanyProfileUpdate = {};
       if (form.name) payload.name = form.name;
-      if (form.cuit !== undefined) payload.cuit = form.cuit || undefined;
       if (form.phone !== undefined) payload.phone = form.phone || undefined;
       if (form.description !== undefined) payload.description = form.description || undefined;
       if (form.address_text !== undefined) payload.address_text = form.address_text || undefined;
@@ -74,48 +204,62 @@ function ProfileTab() {
     }
   };
 
+  const handleCuitSubmit = async (cuit: string) => {
+    try {
+      await companyService.submitCuit(cuit);
+      toast.success("CUIT enviado para verificación.");
+      reload();
+    } catch (err: unknown) {
+      const detail = (err as { detail?: string }).detail ?? "CUIT inválido.";
+      toast.error(detail);
+    }
+  };
+
   if (!profile) return <div className="flex justify-center py-16"><Spinner /></div>;
 
   if (!editing) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
-        {!profile.cuit && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
-            <strong>Completá tu perfil:</strong> sin CUIT verificado, algunas funciones estarán limitadas.
+      <div className="space-y-3">
+        <CuitBanner profile={profile} onSubmit={handleCuitSubmit} />
+
+        <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">{profile.name}</h2>
+              <p className="text-xs text-gray-400">@{profile.slug}</p>
+            </div>
+            <button
+              onClick={() => setEditing(true)}
+              className="text-xs text-green-600 font-semibold hover:underline"
+            >
+              Editar
+            </button>
           </div>
-        )}
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">{profile.name}</h2>
-            <p className="text-xs text-gray-400">@{profile.slug}</p>
+
+          <LogoUploader
+            profile={profile}
+            onLogoChange={(url) => setProfile((p) => p ? { ...p, logo_url: url } : p)}
+          />
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <Field label="CUIT" value={profile.cuit} />
+            <Field label="Teléfono" value={profile.phone} />
+            <Field label="Dirección" value={profile.address_text} className="col-span-2" />
           </div>
-          <button
-            onClick={() => setEditing(true)}
-            className="text-xs text-green-600 font-semibold hover:underline"
-          >
-            Editar
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <Field label="CUIT" value={profile.cuit} />
-          <Field label="Teléfono" value={profile.phone} />
-          <Field label="Dirección" value={profile.address_text} className="col-span-2" />
-          <Field label="Lat" value={profile.lat?.toString()} />
-          <Field label="Lng" value={profile.lng?.toString()} />
-        </div>
-        {profile.description && (
-          <p className="text-sm text-gray-600 border-t border-gray-100 pt-3">{profile.description}</p>
-        )}
-        {profile.avg_rating && (
-          <div className="border-t border-gray-100 pt-3 flex items-center gap-2">
-            <span className="text-yellow-500 font-bold">★ {Number(profile.avg_rating).toFixed(1)}</span>
-            <span className="text-xs text-gray-400">({profile.total_ratings} valoraciones)</span>
+          {profile.description && (
+            <p className="text-sm text-gray-600 border-t border-gray-100 pt-3">{profile.description}</p>
+          )}
+          {profile.avg_rating && (
+            <div className="border-t border-gray-100 pt-3 flex items-center gap-2">
+              <span className="text-yellow-500 font-bold">★ {Number(profile.avg_rating).toFixed(1)}</span>
+              <span className="text-xs text-gray-400">({profile.total_ratings} valoraciones)</span>
+            </div>
+          )}
+          <div className="border-t border-gray-100 pt-3">
+            <Link to="/vehicles/my" className="text-sm text-green-600 font-semibold hover:underline">
+              → Ver mi stock
+            </Link>
           </div>
-        )}
-        <div className="border-t border-gray-100 pt-3">
-          <Link to="/vehicles/my" className="text-sm text-green-600 font-semibold hover:underline">
-            → Ver mi stock
-          </Link>
         </div>
       </div>
     );
@@ -125,7 +269,6 @@ function ProfileTab() {
     <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
       <h2 className="text-base font-bold text-gray-900">Editar perfil</h2>
       <Input label="Nombre de agencia" value={form.name ?? ""} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-      <Input label="CUIT" value={form.cuit ?? ""} onChange={(e) => setForm((f) => ({ ...f, cuit: e.target.value }))} placeholder="20-12345678-9" />
       <Input label="Teléfono / WhatsApp" value={form.phone ?? ""} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+54 9 11 1234-5678" />
       <Input label="Dirección" value={form.address_text ?? ""} onChange={(e) => setForm((f) => ({ ...f, address_text: e.target.value }))} />
       <div className="grid grid-cols-2 gap-3">

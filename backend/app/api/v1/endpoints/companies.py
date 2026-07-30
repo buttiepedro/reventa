@@ -1,13 +1,26 @@
 import uuid
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session, require_super_admin
+from app.core import s3
+from app.models.notification import Notification
 from app.models.radar_entry import RadarEntry
 from app.models.user import Role, User
-from app.schemas.company import CompanyCreate, CompanyProfile, CompanyProfileUpdate, CompanyRead, CompanyUpdate, RadarEntryCreate, RadarEntryRead
+from app.schemas.company import (
+    CompanyCreate,
+    CompanyProfile,
+    CompanyProfileUpdate,
+    CompanyRead,
+    CompanyUpdate,
+    CuitSubmit,
+    RadarEntryCreate,
+    RadarEntryRead,
+    VerifyCuitRequest,
+)
 from app.schemas.user import UserCreate, UserRead
 from app.services.company import CompanyService
 from app.services.user import UserService
@@ -108,7 +121,10 @@ async def get_my_profile(
     session: AsyncSession = Depends(get_session),
 ):
     cid = _require_company_admin(current_user)
-    return await CompanyService(session).get_or_404(cid)
+    company = await CompanyService(session).get_or_404(cid)
+    if company.logo_s3_key:
+        company.logo_url = await s3.generate_view_url(company.logo_s3_key)
+    return company
 
 
 @router.patch("/me/profile", response_model=CompanyProfile)
@@ -174,4 +190,98 @@ async def delete_radar_entry(
     if not entry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     await session.delete(entry)
+    await session.flush()
+
+
+# ─── CUIT verification ────────────────────────────────────────
+
+
+@router.post("/me/cuit", status_code=status.HTTP_204_NO_CONTENT)
+async def submit_cuit(
+    data: CuitSubmit,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    cid = _require_company_admin(current_user)
+    svc = CompanyService(session)
+    company = await svc.get_or_404(cid)
+    company.cuit = data.cuit
+    company.cuit_verified = False
+    company.cuit_submitted_at = datetime.now(timezone.utc)
+    company.cuit_review_notes = None
+    await session.flush()
+
+
+@router.patch("/admin/companies/{company_id}/verify-cuit", status_code=status.HTTP_204_NO_CONTENT)
+async def verify_company_cuit(
+    company_id: uuid.UUID,
+    data: VerifyCuitRequest,
+    current_user: User = Depends(require_super_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    svc = CompanyService(session)
+    company = await svc.get_or_404(company_id)
+    if data.approved:
+        company.cuit_verified = True
+        company.cuit_review_notes = None
+    else:
+        company.cuit_verified = False
+        company.cuit_review_notes = data.reason
+    company.cuit_reviewed_at = datetime.now(timezone.utc)
+    company.cuit_reviewer_id = current_user.id
+    session.add(Notification(
+        company_id=company.id,
+        title="Verificación de CUIT" + (" aprobada" if data.approved else " rechazada"),
+        body=(
+            "Tu CUIT fue verificado. Ya podés publicar vehículos."
+            if data.approved
+            else f"Tu CUIT fue rechazado.{' Motivo: ' + data.reason if data.reason else ''} Corregilo y volvé a enviarlo."
+        ),
+        entity_type="cuit_verified" if data.approved else "cuit_rejected",
+    ))
+    await session.flush()
+
+
+# ─── Logo upload ──────────────────────────────────────────────
+
+
+@router.post("/me/logo", status_code=status.HTTP_200_OK)
+async def upload_logo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    cid = _require_company_admin(current_user)
+    if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Formato no soportado. Use JPG, PNG o WEBP.")
+    data = await file.read()
+    if len(data) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El logo no puede superar 2MB.")
+
+    ext_map = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+    ext = ext_map[file.content_type]
+    s3_key = f"logos/{cid}/{uuid.uuid4()}{ext}"
+
+    await s3.upload_fileobj(s3_key, data, file.content_type)
+
+    company = await CompanyService(session).get_or_404(cid)
+    company.logo_s3_key = s3_key
+    company.logo_url = None
+    await session.flush()
+
+    view_url = await s3.generate_view_url(s3_key)
+    return {"logo_url": view_url}
+
+
+@router.delete("/me/logo", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_logo(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    cid = _require_company_admin(current_user)
+    company = await CompanyService(session).get_or_404(cid)
+    if company.logo_s3_key:
+        await s3.delete_object(company.logo_s3_key)
+        company.logo_s3_key = None
+    company.logo_url = None
     await session.flush()

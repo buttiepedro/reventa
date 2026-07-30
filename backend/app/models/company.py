@@ -19,9 +19,15 @@ class Company(Base):
 
     # Identity & verification
     cuit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    cuit_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    cuit_submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cuit_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cuit_reviewer_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    cuit_review_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     verification_status: Mapped[str] = mapped_column(String(20), nullable=False, default="approved")
     verification_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    logo_s3_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
 

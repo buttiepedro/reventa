@@ -3,13 +3,11 @@ import type { Company, CompanyProfile, RadarEntry } from "../types";
 
 export interface CompanyProfileUpdate {
   name?: string;
-  cuit?: string;
   phone?: string;
   description?: string;
   address_text?: string;
   lat?: number;
   lng?: number;
-  logo_url?: string;
 }
 
 export interface RadarEntryCreate {
@@ -28,6 +26,17 @@ export const companyService = {
   getMyProfile: (): Promise<CompanyProfile> => api.get("/companies/me/profile"),
   updateMyProfile: (data: CompanyProfileUpdate): Promise<CompanyProfile> =>
     api.patch("/companies/me/profile", data),
+
+  submitCuit: (cuit: string): Promise<void> =>
+    api.post("/companies/me/cuit", { cuit }),
+
+  uploadLogo: (file: File): Promise<{ logo_url: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.postForm("/companies/me/logo", form);
+  },
+
+  deleteLogo: (): Promise<void> => api.delete("/companies/me/logo"),
 
   listRadar: (): Promise<RadarEntry[]> => api.get("/companies/me/radar"),
   createRadarEntry: (data: RadarEntryCreate): Promise<RadarEntry> =>
