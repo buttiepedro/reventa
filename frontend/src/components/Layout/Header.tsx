@@ -83,7 +83,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200">
       <div className="max-w-2xl mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
@@ -137,7 +137,7 @@ export function Header() {
                   {notifOpen && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
-                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden">
+                      <div className="dropdown-panel absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 z-20 overflow-hidden">
                         <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
                           <span className="text-sm font-semibold text-gray-800">Notificaciones</span>
                           {notifications.some((n) => !n.is_read) && (
@@ -187,7 +187,7 @@ export function Header() {
                 {menuOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-100 z-20 py-1">
+                    <div className="dropdown-panel absolute right-0 mt-2 w-44 bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 z-20 py-1">
                       <div className="px-4 py-2 border-b border-gray-50">
                         <p className="text-xs font-semibold text-gray-800 truncate">{user.full_name}</p>
                         <p className="text-xs text-gray-400">{user.role.replace(/_/g, " ")}</p>

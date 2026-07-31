@@ -40,45 +40,72 @@ export function Login() {
   if (isLoading) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-blue-700 tracking-tight">Reventa</h1>
-          <p className="text-sm text-gray-500 mt-1">Red de concesionarias</p>
+    <div className="min-h-screen flex items-center justify-center bg-white px-6 relative overflow-hidden">
+      {/* Atmospheric blobs */}
+      <div
+        className="absolute -top-32 -left-32 w-80 h-80 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(22,163,74,0.10) 0%, transparent 70%)" }}
+      />
+      <div
+        className="absolute -bottom-24 -right-16 w-64 h-64 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(22,163,74,0.06) 0%, transparent 70%)" }}
+      />
+
+      <div className="w-full max-w-sm animate-fade-up relative">
+        {/* Brand mark */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+              <span className="text-white font-black text-sm leading-none">R</span>
+            </div>
+            <span className="text-2xl font-black text-slate-900 tracking-tight">Reventa</span>
+          </div>
+          <p className="text-slate-500 text-sm leading-relaxed">
+            La red de concesionarias de confianza.
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Iniciar sesión</h2>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                placeholder="usuario@empresa.com"
+                className="w-full bg-transparent border-b-2 border-slate-200 focus:border-green-500 outline-none py-2 text-slate-900 placeholder:text-slate-300 text-base transition-colors duration-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="w-full bg-transparent border-b-2 border-slate-200 focus:border-green-500 outline-none py-2 text-slate-900 placeholder:text-slate-300 text-base transition-colors duration-200"
+              />
+            </div>
+          </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              placeholder="usuario@empresa.com"
-            />
-            <Input
-              label="Contraseña"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-            />
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
 
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-            )}
-
-            <Button type="submit" loading={submitting} className="w-full mt-2" size="lg">
-              {submitting ? "Ingresando…" : "Ingresar"}
-            </Button>
-          </form>
-        </div>
+          <Button type="submit" loading={submitting} className="w-full mt-2" size="lg">
+            {submitting ? "Ingresando…" : "Ingresar"}
+          </Button>
+        </form>
       </div>
     </div>
   );

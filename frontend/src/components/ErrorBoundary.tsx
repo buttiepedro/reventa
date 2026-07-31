@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-gray-500 mb-6">{this.state.message || "Error inesperado"}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
             >
               Recargar página
             </button>

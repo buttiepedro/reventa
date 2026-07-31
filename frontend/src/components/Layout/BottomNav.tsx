@@ -69,22 +69,20 @@ export function BottomNav() {
   const visibleTabs = isClientMode ? tabs.filter((t) => t.to === "/mercado") : tabs;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 safe-area-pb">
-      <div className="flex items-stretch h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-slate-200 safe-area-pb">
+      <div className="flex items-stretch h-16 max-w-2xl mx-auto">
         {visibleTabs.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                isActive ? "text-green-600" : "text-gray-400"
-              }`
-            }
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] transition-transform duration-100"
           >
             {({ isActive }) => (
               <>
-                {tab.icon(isActive)}
-                <span className={`text-[10px] font-medium leading-none ${isActive ? "text-green-600" : "text-gray-400"}`}>
+                <div className={`p-1.5 rounded-xl transition-colors duration-200 ${isActive ? "bg-green-50" : ""}`}>
+                  {tab.icon(isActive)}
+                </div>
+                <span className={`text-[10px] font-medium leading-none transition-colors duration-200 ${isActive ? "text-green-600" : "text-slate-400"}`}>
                   {tab.label}
                 </span>
               </>

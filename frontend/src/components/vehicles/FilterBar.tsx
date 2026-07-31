@@ -5,7 +5,7 @@ interface Props {
   onChange: (filters: VehicleFilters) => void;
 }
 
-const inputCls = "rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white";
+const inputCls = "rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-[border-color,box-shadow] duration-150";
 
 export function FilterBar({ filters, onChange }: Props) {
   const set = (key: keyof VehicleFilters, value: string) => {

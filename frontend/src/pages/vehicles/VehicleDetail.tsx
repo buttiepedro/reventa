@@ -166,7 +166,7 @@ export function VehicleDetail() {
             {!isClientMode && (
               <div className="mb-3">
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Precio reventa</p>
-                <p className="text-3xl font-black text-blue-700">${Number(vehicle.price_resale).toLocaleString()}</p>
+                <p className="text-3xl font-black text-green-600">${Number(vehicle.price_resale).toLocaleString()}</p>
               </div>
             )}
             <div>

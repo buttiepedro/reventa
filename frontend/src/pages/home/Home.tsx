@@ -150,10 +150,10 @@ export function Home() {
           { label: "Ofertas", value: stats.ofertas_pendientes },
           { label: "Matches", value: stats.match_directos },
           { label: "En stock", value: stats.vehiculos_publicados },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{s.label}</p>
+        ].map((s, i) => (
+          <div key={s.label} className={`animate-fade-up stagger-${i + 1} bg-white rounded-xl p-3 text-center shadow-sm border border-slate-100`}>
+            <p className="text-2xl font-bold text-slate-900">{s.value}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{s.label}</p>
           </div>
         ))}
       </div>

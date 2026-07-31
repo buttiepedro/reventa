@@ -30,9 +30,9 @@ interface Props {
 export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }: Props) {
   const { isClientMode } = useAudience();
   return (
-    <Link to={`/vehicles/${vehicle.id}`} className="block group">
-      <div className={`bg-white rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-shadow ${
-        vehicle.is_favorite_company ? "ring-2 ring-blue-500" : "border border-gray-100"
+    <Link to={`/vehicles/${vehicle.id}`} className="block">
+      <div className={`vehicle-card-hover bg-white rounded-xl overflow-hidden shadow-sm transition-[transform,box-shadow] duration-200 ease-out ${
+        vehicle.is_favorite_company ? "ring-2 ring-green-500" : "border border-slate-100"
       }`}>
         {/* Image */}
         <div className="relative aspect-video bg-gray-100">
@@ -50,7 +50,7 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
             {STATUS_LABELS[vehicle.status] ?? vehicle.status}
           </span>
           {vehicle.is_favorite_company && (
-            <span className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+            <span className="absolute top-2 left-2 bg-green-600 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
               ★ Favorita
             </span>
           )}
@@ -68,7 +68,7 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
 
         {/* Info */}
         <div className="p-3.5">
-          <p className="font-bold text-gray-900 text-base leading-tight">
+          <p className="font-bold text-slate-900 text-base leading-tight">
             {vehicle.brand} {vehicle.model} <span className="font-normal text-gray-500">{vehicle.year}</span>
           </p>
           {vehicle.version && (
@@ -91,7 +91,7 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
                     <p className="font-bold text-red-600 text-lg leading-none">${Number(vehicle.liquidacion_price).toLocaleString()}</p>
                   </>
                 ) : (
-                  <p className="font-bold text-blue-600 text-lg leading-none">${Number(vehicle.price_resale).toLocaleString()}</p>
+                  <p className="font-bold text-green-600 text-lg leading-none">${Number(vehicle.price_resale).toLocaleString()}</p>
                 )}
               </div>
             )}
