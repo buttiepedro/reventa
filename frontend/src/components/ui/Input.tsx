@@ -10,14 +10,14 @@ export function Input({ label, error, className = "", id, ...rest }: Props) {
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-slate-700">
+        <label htmlFor={inputId} className="text-[13px] font-semibold text-muted">
           {label}
         </label>
       )}
       <input
         id={inputId}
-        className={`w-full rounded-lg border px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-[border-color,box-shadow] duration-150 ${
-          error ? "border-red-400" : "border-slate-300"
+        className={`w-full rounded-[10px] border bg-surface px-3 py-2.5 text-sm text-ink placeholder-faint transition-[border-color,box-shadow] duration-150 focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 ${
+          error ? "border-red-400" : "border-line"
         } ${className}`}
         {...rest}
       />
@@ -36,14 +36,14 @@ export function Select({ label, error, className = "", id, children, ...rest }: 
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-slate-700">
+        <label htmlFor={inputId} className="text-[13px] font-semibold text-muted">
           {label}
         </label>
       )}
       <select
         id={inputId}
-        className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-[border-color,box-shadow] duration-150 ${
-          error ? "border-red-400" : "border-slate-300"
+        className={`w-full rounded-[10px] border bg-surface px-3 py-2.5 text-sm text-ink transition-[border-color,box-shadow] duration-150 focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 ${
+          error ? "border-red-400" : "border-line"
         } ${className}`}
         {...rest}
       >

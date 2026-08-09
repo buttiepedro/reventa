@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
+import { Sidebar } from "./Sidebar";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -9,9 +10,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
   if (isCompanyUser) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <Header />
-        <main className="pb-20 px-4 pt-4 max-w-2xl mx-auto">{children}</main>
+      <div className="min-h-screen bg-canvas">
+        <Sidebar />
+        <div className="lg:pl-[232px]">
+          <Header />
+          <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 lg:max-w-5xl lg:px-8 lg:pb-12 lg:pt-6">
+            {children}
+          </main>
+        </div>
         <BottomNav />
       </div>
     );
@@ -19,9 +25,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
   // Super admin keeps the classic layout
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
     </div>
   );
 }

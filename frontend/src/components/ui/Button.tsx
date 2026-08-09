@@ -4,16 +4,16 @@ type Variant = "primary" | "secondary" | "danger" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
-  secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 focus:ring-slate-400",
-  danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-  ghost: "text-slate-600 hover:bg-slate-100 focus:ring-slate-400",
+  primary: "bg-brand text-white hover:bg-brand-strong focus:ring-brand/40",
+  secondary: "bg-surface text-ink-soft border border-line hover:bg-canvas focus:ring-gray-300",
+  danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/40",
+  ghost: "text-muted hover:bg-canvas focus:ring-gray-300",
 };
 
 const sizes: Record<Size, string> = {
   sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2 text-sm",
-  lg: "px-5 py-2.5 text-base",
+  md: "px-4 py-2.5 text-sm",
+  lg: "px-5 py-3 text-base",
 };
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -26,7 +26,7 @@ export function Button({ variant = "primary", size = "md", loading, disabled, ch
   return (
     <button
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-[transform,background-color,color,border-color,box-shadow] duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold transition-[transform,background-color,color,border-color,box-shadow] duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
       {...rest}
     >
       {loading && (

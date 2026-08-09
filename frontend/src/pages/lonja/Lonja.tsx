@@ -17,20 +17,30 @@ const PAYMENT_LABELS: Record<string, string> = {
   trade_in: "Toma en parte de pago",
 };
 
-function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+function TabToggle({ active, onChange, count }: { active: Tab; onChange: (t: Tab) => void; count?: number }) {
+  const tabs: { id: Tab; label: string; n?: number }[] = [
+    { id: "consultas", label: "Consultas", n: count },
+    { id: "mis_consultas", label: "Mis consultas" },
+  ];
   return (
-    <div className="flex gap-2">
-      {(["consultas", "mis_consultas"] as Tab[]).map((t) => (
-        <button
-          key={t}
-          onClick={() => onChange(t)}
-          className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
-            active === t ? "bg-green-600 text-white" : "bg-white text-gray-500 border border-gray-200"
-          }`}
-        >
-          {t === "consultas" ? "La red busca" : "Mis consultas"}
-        </button>
-      ))}
+    <div className="flex gap-6 border-b border-line">
+      {tabs.map((t) => {
+        const on = active === t.id;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            className={`-mb-px flex items-center gap-1.5 border-b-2 pb-2.5 transition-colors ${
+              on ? "border-brand" : "border-transparent"
+            }`}
+          >
+            <span className={`text-[13.5px] ${on ? "font-semibold text-ink" : "font-medium text-faint"}`}>{t.label}</span>
+            {t.n != null && (
+              <span className={`font-mono text-[11px] font-bold ${on ? "text-brand" : "text-faint"}`}>{t.n}</span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -71,50 +81,61 @@ function RequestCard({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="p-4">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <p className="text-xs text-gray-400 mb-0.5">{request.company_name}</p>
-            <p className="text-base font-bold text-gray-900">
-              {request.reference_models?.length
-                ? request.reference_models.join(", ")
-                : request.category ?? "Cualquier vehículo"}
-            </p>
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-gray-500">
-              <span>
-                Presupuesto:{" "}
-                <span className="font-semibold text-green-700">
-                  {request.budget_min ? `$${Number(request.budget_min).toLocaleString()} – ` : "hasta "}
-                  ${Number(request.budget_max).toLocaleString()}
-                </span>
-              </span>
-              <span>· {PAYMENT_LABELS[request.payment_method] ?? request.payment_method}</span>
-              {request.offer_count > 0 && (
-                <span>· {request.offer_count} oferta{request.offer_count !== 1 ? "s" : ""}</span>
-              )}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="font-mono text-[17px] font-bold leading-none text-ink">
+              ${Number(request.budget_max).toLocaleString()}
+            </div>
+            <div className="mt-1 text-[11.5px] text-faint">
+              {PAYMENT_LABELS[request.payment_method] ?? request.payment_method}
             </div>
           </div>
-          <span className={`ml-3 text-xs font-semibold shrink-0 ${daysLeft <= 1 ? "text-red-500" : "text-gray-400"}`}>
-            {daysLeft}d
+          <span className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.05em] ${
+            daysLeft <= 1 ? "bg-red-50 text-red-600" : "bg-mint text-brand"
+          }`}>
+            {daysLeft}D REST.
           </span>
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="mt-3 text-xs font-semibold text-green-600 hover:underline"
-        >
-          {expanded ? "Cancelar" : "Ofrecer vehículo →"}
-        </button>
+        <p className="mt-2.5 text-[14px] font-semibold leading-snug text-ink">
+          {request.reference_models?.length
+            ? request.reference_models.join(", ")
+            : request.category ?? "Cualquier vehículo"}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {request.budget_min != null && (
+            <span className="rounded-md border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
+              desde ${Number(request.budget_min).toLocaleString()}
+            </span>
+          )}
+          {request.offer_count > 0 && (
+            <span className="rounded-md border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
+              {request.offer_count} oferta{request.offer_count !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-3 border-t border-line-soft pt-3">
+          <div className="min-w-0">
+            <div className="truncate text-[11.5px] font-semibold text-muted">{request.company_name}</div>
+          </div>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="shrink-0 rounded-[9px] border border-brand px-3.5 py-2 text-[12.5px] font-semibold text-brand transition-colors hover:bg-mint"
+          >
+            {expanded ? "Cancelar" : "Ofrecer mi stock"}
+          </button>
+        </div>
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-100 p-4 space-y-3 bg-gray-50">
+        <div className="space-y-3 border-t border-line-soft bg-canvas p-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Seleccioná un vehículo de tu stock</label>
+            <label className="text-xs font-semibold text-muted">Seleccioná un vehículo de tu stock</label>
             <select
               value={selectedVehicle}
               onChange={(e) => setSelectedVehicle(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
             >
               <option value="">— Elegí un vehículo —</option>
               {myVehicles.map((v) => (
@@ -133,7 +154,7 @@ function RequestCard({
           <button
             onClick={handleSubmitOffer}
             disabled={!selectedVehicle || sending}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50 w-full"
+            className="w-full rounded-[10px] bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-50"
           >
             {sending ? "Enviando..." : "Enviar oferta"}
           </button>
@@ -210,18 +231,16 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="text-xs px-4 py-2 bg-green-600 text-white rounded-full font-semibold"
-        >
-          + Nueva consulta
-        </button>
-      </div>
+      <button
+        onClick={() => setShowForm(!showForm)}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-strong"
+      >
+        {showForm ? "Cerrar" : "＋ Publicar Búsqueda de Cliente"}
+      </button>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-xl shadow-sm p-4 space-y-3">
-          <p className="text-sm font-bold text-gray-900">Publicar consulta de cliente</p>
+        <form onSubmit={handleCreate} className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-faint">Publicar consulta de cliente</p>
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Presupuesto mín. $"
@@ -240,21 +259,21 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Modelos de referencia (separados por coma)</label>
+            <label className="text-xs font-semibold text-muted">Modelos de referencia (separados por coma)</label>
             <input
               type="text"
               value={modelsInput}
               onChange={(e) => setModelsInput(e.target.value)}
               placeholder="Ej: Toyota Hilux, Ford Ranger"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Forma de pago</label>
+            <label className="text-xs font-semibold text-muted">Forma de pago</label>
             <select
               value={form.payment_method ?? "any"}
               onChange={(e) => setForm((f) => ({ ...f, payment_method: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
             >
               <option value="any">Cualquier forma</option>
               <option value="cash">Efectivo</option>
@@ -268,24 +287,24 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value || undefined }))}
             placeholder="Color preferido, año mínimo, etc."
           />
-          <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50">
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={saving} className="rounded-[10px] bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-50">
               {saving ? "Publicando..." : "Publicar"}
             </button>
-            <button type="button" onClick={() => setShowForm(false)} className="text-sm text-gray-500">Cancelar</button>
+            <button type="button" onClick={() => setShowForm(false)} className="text-sm text-muted">Cancelar</button>
           </div>
         </form>
       )}
 
       {requests.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+        <div className="rounded-2xl border border-line bg-surface p-8 text-center">
           <p className="text-2xl mb-2">🤝</p>
-          <p className="text-sm font-semibold text-gray-700">Sin consultas activas</p>
-          <p className="text-xs text-gray-400 mt-1">Publicá las búsquedas de tus clientes para que la red te acerque opciones.</p>
+          <p className="text-sm font-semibold text-ink-soft">Sin consultas activas</p>
+          <p className="mt-1 text-xs text-faint">Publicá las búsquedas de tus clientes para que la red te acerque opciones.</p>
         </div>
       ) : (
         requests.map((req) => (
-          <div key={req.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div key={req.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
             <div className="p-4">
               <div className="flex justify-between items-start">
                 <div>
@@ -297,7 +316,7 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                  req.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                  req.status === "active" ? "bg-mint text-brand" : "bg-tab text-muted"
                 }`}>
                   {req.status === "active" ? "Activa" : "Cerrada"}
                 </span>
@@ -330,7 +349,7 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
                       </div>
                       <div className="flex flex-col items-end gap-1 ml-3">
                         {offer.rank_score !== null && (
-                          <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                          <span className="text-xs bg-mint text-brand px-2 py-0.5 rounded-full font-semibold">
                             {Number(offer.rank_score).toFixed(0)}pts
                           </span>
                         )}
@@ -409,22 +428,25 @@ export function Lonja() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">La Lonja</h1>
+      <div>
+        <h1 className="text-[22px] font-bold tracking-tight text-ink">La Lonja</h1>
+        <p className="mt-0.5 text-[13px] text-faint">Demanda activa de la red entre agencias</p>
+      </div>
       {isReventa && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <span className="font-semibold">Reventa Autorizado</span> — Podés ver las consultas activas y ofrecer tu stock, pero no podés publicar nuevas búsquedas.
         </div>
       )}
-      <TabToggle active={tab} onChange={setTab} />
+      <TabToggle active={tab} onChange={setTab} count={tab === "consultas" ? requests.length : undefined} />
 
       {tab === "consultas" && (
         <>
           <button
             onClick={() => setMatchMyStock((v) => !v)}
-            className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors border ${
+            className={`rounded-2xl border px-3 py-1 text-xs font-semibold transition-colors ${
               matchMyStock
-                ? "bg-green-600 text-white border-green-600"
-                : "bg-white text-gray-500 border-gray-200"
+                ? "border-brand bg-brand text-white"
+                : "border-line bg-surface text-muted"
             }`}
           >
             Para mi stock
@@ -432,10 +454,10 @@ export function Lonja() {
           {loading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : requests.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <div className="rounded-2xl border border-line bg-surface p-8 text-center">
             <p className="text-2xl mb-2">📋</p>
-            <p className="text-sm font-semibold text-gray-700">Sin consultas abiertas</p>
-            <p className="text-xs text-gray-400 mt-1">Cuando otras agencias publiquen búsquedas de clientes, aparecerán acá.</p>
+            <p className="text-sm font-semibold text-ink-soft">Sin consultas abiertas</p>
+            <p className="mt-1 text-xs text-faint">Cuando otras agencias publiquen búsquedas de clientes, aparecerán acá.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -454,7 +476,7 @@ export function Lonja() {
 
       {tab === "mis_consultas" && (
         isReventa ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <div className="rounded-2xl border border-line bg-surface p-8 text-center">
             <p className="text-2xl mb-2">🔒</p>
             <p className="text-sm font-semibold text-gray-700">Función no disponible</p>
             <p className="text-xs text-gray-400 mt-1">Las cuentas Reventa Autorizado no pueden publicar búsquedas. Solo podés ofrecer tu stock a las consultas de otros.</p>

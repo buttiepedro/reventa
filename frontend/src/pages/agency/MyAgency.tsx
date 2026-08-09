@@ -22,18 +22,82 @@ function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
     { id: "reputacion", label: "Reputación" },
   ];
   return (
-    <div className="flex gap-2">
-      {tabs.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onChange(t.id)}
-          className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
-            active === t.id ? "bg-green-600 text-white" : "bg-white text-gray-500 border border-gray-200"
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
+    <div className="flex gap-5 overflow-x-auto border-b border-line no-scrollbar">
+      {tabs.map((t) => {
+        const on = active === t.id;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            className={`-mb-px shrink-0 border-b-2 pb-2.5 text-[13px] transition-colors ${
+              on ? "border-brand font-semibold text-ink" : "border-transparent font-medium text-faint"
+            }`}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Profile hero ────────────────────────────────────────────
+
+function AgencyHero() {
+  const [profile, setProfile] = useState<CompanyProfile | null>(null);
+
+  useEffect(() => {
+    companyService.getMyProfile().then(setProfile).catch(() => {});
+  }, []);
+
+  const rating = profile?.avg_rating != null ? Number(profile.avg_rating) : null;
+  const light = rating == null ? "gray" : rating >= 4 ? "green" : rating >= 3 ? "amber" : "red";
+  const lightLabel = { green: "Semáforo en verde", amber: "Semáforo en amarillo", red: "Semáforo en rojo", gray: "Sin calificaciones" }[light];
+  const dotColor = { green: "bg-brand-lo", amber: "bg-amber-600", red: "bg-red-600", gray: "bg-gray-300" }[light];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+      {/* Cover */}
+      <div className="h-28 photo-hatch" />
+      <div className="px-4 pb-4">
+        <div className="-mt-8 flex items-end gap-3.5">
+          {profile?.logo_url ? (
+            <img src={profile.logo_url} alt="" className="h-[68px] w-[68px] shrink-0 rounded-2xl border border-line bg-surface object-cover shadow-md" />
+          ) : (
+            <span className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-[28px] font-light text-ink shadow-md">
+              {(profile?.name ?? "R")[0]}
+            </span>
+          )}
+          <div className="pb-1">
+            <div className="text-[17px] font-bold leading-tight text-ink">{profile?.name ?? "Mi Agencia"}</div>
+            {profile?.cuit_verified ? (
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-brand">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                </span>
+                <span className="text-[12px] font-semibold text-brand">CUIT verificado</span>
+              </div>
+            ) : (
+              <div className="mt-1 text-[12px] text-faint">CUIT sin verificar</div>
+            )}
+          </div>
+        </div>
+
+        {/* Semáforo */}
+        <div className={`mt-3 flex items-center gap-2 rounded-[10px] border px-3 py-2.5 ${light === "green" ? "border-mint-border bg-mint" : "border-line bg-canvas"}`}>
+          <span className="flex gap-1">
+            <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+            <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+            <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+          </span>
+          <span className={`text-[12.5px] font-semibold ${light === "green" ? "text-brand" : "text-muted"}`}>{lightLabel}</span>
+          {rating != null && (
+            <span className="ml-auto font-mono text-[12px] text-mint-ink">
+              {rating.toFixed(1)} · {profile?.total_ratings ?? 0} op.
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -222,7 +286,7 @@ function ProfileTab() {
       <div className="space-y-3">
         <CuitBanner profile={profile} onSubmit={handleCuitSubmit} />
 
-        <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+        <div className="rounded-2xl border border-line bg-surface p-5 space-y-4">
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-lg font-bold text-gray-900">{profile.name}</h2>
@@ -266,7 +330,7 @@ function ProfileTab() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+    <div className="rounded-2xl border border-line bg-surface p-5 space-y-4">
       <h2 className="text-base font-bold text-gray-900">Editar perfil</h2>
       <Input label="Nombre de agencia" value={form.name ?? ""} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
       <Input label="Teléfono / WhatsApp" value={form.phone ?? ""} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+54 9 11 1234-5678" />
@@ -276,19 +340,19 @@ function ProfileTab() {
         <Input label="Longitud" type="number" step="any" value={form.lng ?? ""} onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value ? Number(e.target.value) : undefined }))} placeholder="-58.3816" />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Descripción</label>
+        <label className="text-[13px] font-semibold text-muted">Descripción</label>
         <textarea
           rows={3}
           value={form.description ?? ""}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
         />
       </div>
       <div className="flex gap-3">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+          className="rounded-[10px] bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-50"
         >
           {saving ? "Guardando..." : "Guardar"}
         </button>
@@ -350,7 +414,7 @@ function ConexionesTab() {
   return (
     <div className="space-y-4">
       {incoming.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-amber-50">
             <p className="text-xs font-semibold text-amber-700">Solicitudes pendientes ({incoming.length})</p>
           </div>
@@ -360,13 +424,13 @@ function ConexionesTab() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleAccept(r.requester_id)}
-                  className="text-xs px-3 py-1 bg-green-600 text-white rounded-full font-semibold"
+                  className="rounded-2xl bg-brand px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-brand-strong"
                 >
                   Aceptar
                 </button>
                 <button
                   onClick={() => handleRemove(r.requester_id)}
-                  className="text-xs px-3 py-1 border border-gray-200 text-gray-500 rounded-full"
+                  className="rounded-2xl border border-line px-3 py-1 text-xs font-medium text-muted"
                 >
                   Rechazar
                 </button>
@@ -376,7 +440,7 @@ function ConexionesTab() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         <div className="px-4 py-2.5 border-b border-gray-100">
           <p className="text-xs font-semibold text-gray-500">Conectadas ({confirmed.length})</p>
         </div>
@@ -444,12 +508,12 @@ function RadarTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="rounded-2xl border border-line bg-surface p-4">
         <div className="flex justify-between items-center mb-3">
           <p className="text-sm font-semibold text-gray-800">Radar de reposición</p>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="text-xs px-3 py-1 bg-green-600 text-white rounded-full font-semibold"
+            className="rounded-2xl bg-brand px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-brand-strong"
           >
             + Agregar
           </button>
@@ -458,7 +522,7 @@ function RadarTab() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleAdd} className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+        <form onSubmit={handleAdd} className="rounded-2xl border border-line bg-surface p-4 space-y-3">
           <p className="text-sm font-semibold text-gray-800">Nueva entrada</p>
           <Input label="Marca *" required value={form.brand} onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))} />
           <Input label="Modelo" value={form.model ?? ""} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value || undefined }))} />
@@ -468,7 +532,7 @@ function RadarTab() {
           </div>
           <Input label="Precio máximo $" type="number" min={0} value={form.max_price ?? ""} onChange={(e) => setForm((f) => ({ ...f, max_price: e.target.value ? Number(e.target.value) : undefined }))} />
           <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50">
+            <button type="submit" disabled={saving} className="rounded-[10px] bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-50">
               {saving ? "Guardando..." : "Guardar"}
             </button>
             <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-gray-500 text-sm">
@@ -479,13 +543,13 @@ function RadarTab() {
       )}
 
       {entries.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+        <div className="rounded-2xl border border-line bg-surface p-8 text-center">
           <p className="text-2xl mb-2">📡</p>
           <p className="text-sm font-semibold text-gray-700">Radar vacío</p>
           <p className="text-xs text-gray-400 mt-1">Añadí las marcas y modelos que te interesan.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface">
           {entries.map((entry) => (
             <div key={entry.id} className="flex items-start justify-between px-4 py-3 border-b border-gray-50 last:border-0">
               <div>
@@ -535,7 +599,7 @@ function ReputacionTab() {
 
   if (!data || data.total_ratings === 0) {
     return (
-      <div className="bg-white rounded-xl p-8 text-center shadow-sm">
+      <div className="rounded-2xl border border-line bg-surface p-8 text-center">
         <p className="text-3xl mb-2">⭐</p>
         <p className="text-sm font-semibold text-gray-700">Sin calificaciones aún</p>
         <p className="text-xs text-gray-400 mt-1">Las calificaciones aparecen después de completar operaciones en La Lonja.</p>
@@ -545,7 +609,7 @@ function ReputacionTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-5 space-y-3">
+      <div className="rounded-2xl border border-line bg-surface p-5 space-y-3">
         <div className="flex items-center gap-3">
           <ReputationBadge score={data.reputation_score} avg={data.avg_rating ?? undefined} count={data.total_ratings} size="md" />
         </div>
@@ -561,7 +625,7 @@ function ReputacionTab() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         <div className="px-4 py-2.5 border-b border-gray-100">
           <p className="text-xs font-semibold text-gray-500">Últimas calificaciones</p>
         </div>
@@ -588,7 +652,7 @@ export function MyAgency() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Mi Agencia</h1>
+      <AgencyHero />
       <TabToggle active={tab} onChange={setTab} />
       {tab === "perfil" && <ProfileTab />}
       {tab === "conexiones" && <ConexionesTab />}

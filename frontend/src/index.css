@@ -1,17 +1,137 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   Reventa — design system (rediseño)
+   Superficie blanca sobre lienzo gris cálido. Profundidad por borde de 1px,
+   no por blur. Un solo verde de marca. Números en mono tabular.
+   Neutros corregidos a AA. Public Sans (UI) + JetBrains Mono (cifras).
+   ========================================================================== */
+@theme {
+  /* Typography */
+  --font-sans: "Public Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Radius scale — 10 control · 14 tarjeta · 18 hoja */
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+
+  /* Semantic tokens (used by shell + refined components) */
+  --color-brand: #16803c; /* text / border / fill+white — 5.0:1 */
+  --color-brand-strong: #0f5c2b; /* hover */
+  --color-brand-lo: #1fa34f; /* fills sin texto: dots, gradiente, acento */
+  --color-mint: #edf7f1; /* superficie éxito */
+  --color-mint-border: #c8e4d3;
+  --color-mint-ink: #3d6b4e;
+  --color-warn: #8a5208; /* sobre #FBF0DF — 5.7:1 */
+  --color-warn-bg: #fbf0df;
+  --color-danger: #b42318;
+  --color-danger-bg: #fdecea;
+  --color-ink: #0f1512; /* texto principal */
+  --color-ink-soft: #3d4642;
+  --color-muted: #5a6560;
+  --color-faint: #656f6a; /* AA en blanco y en #F8F9F7 */
+  --color-canvas: #f4f5f3;
+  --color-surface: #ffffff;
+  --color-fill: #f8f9f7; /* relleno de campo */
+  --color-fill-alt: #fafbf9; /* fila alterna */
+  --color-line: #e3e6e2; /* borde de tarjeta */
+  --color-line-soft: #eef0ed; /* divisor */
+  --color-tab: #f1f3f0; /* fondo de segmented / pill inactiva */
+
+  /* --- Remap the default Tailwind ramps so existing classes adopt the palette --- */
+
+  /* Green → brand greens */
+  --color-green-50: #edf7f1;
+  --color-green-100: #dcefe4;
+  --color-green-200: #c8e4d3;
+  --color-green-300: #9bd3b1;
+  --color-green-400: #4fb477;
+  --color-green-500: #16803c;
+  --color-green-600: #16803c;
+  --color-green-700: #0f5c2b;
+  --color-green-800: #14532a;
+  --color-green-900: #0f3d20;
+
+  /* Warm neutral — replaces gray */
+  --color-gray-50: #f7f8f6;
+  --color-gray-100: #edefec;
+  --color-gray-200: #e3e6e2;
+  --color-gray-300: #d0d5cf;
+  --color-gray-400: #656f6a;
+  --color-gray-500: #5a6560;
+  --color-gray-600: #4a544f;
+  --color-gray-700: #3d4642;
+  --color-gray-800: #232d28;
+  --color-gray-900: #0f1512;
+
+  /* Warm neutral — replaces slate */
+  --color-slate-50: #f4f5f3;
+  --color-slate-100: #edefec;
+  --color-slate-200: #e3e6e2;
+  --color-slate-300: #d0d5cf;
+  --color-slate-400: #656f6a;
+  --color-slate-500: #5a6560;
+  --color-slate-600: #4a544f;
+  --color-slate-700: #3d4642;
+  --color-slate-800: #232d28;
+  --color-slate-900: #0f1512;
+
+  /* Danger → #B42318 */
+  --color-red-50: #fdecea;
+  --color-red-100: #fbe0dc;
+  --color-red-200: #f4c3bd;
+  --color-red-400: #d1584b;
+  --color-red-500: #b42318;
+  --color-red-600: #b42318;
+  --color-red-700: #911d13;
+  --color-red-800: #7a1810;
+
+  /* Warning → amber #8A5208 on #FBF0DF */
+  --color-amber-50: #fbf0df;
+  --color-amber-100: #fbf0df;
+  --color-amber-200: #f2ddb8;
+  --color-amber-500: #a9660b;
+  --color-amber-600: #8a5208;
+  --color-amber-700: #8a5208;
+  --color-amber-800: #6f4207;
+  --color-yellow-50: #fbf0df;
+  --color-yellow-100: #fbf0df;
+  --color-yellow-700: #8a5208;
+  --color-yellow-800: #8a5208;
+
+  /* Depth from border, not blur — flatten default shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(15 21 18 / 0.05);
+  --shadow-md: 0 2px 6px -1px rgb(15 21 18 / 0.07);
+  --shadow-lg: 0 10px 24px -6px rgb(15 21 18 / 0.1);
+  --shadow-xl: 0 18px 40px -8px rgb(15 21 18 / 0.12);
+}
+
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @layer base {
-  *, *::before, *::after { box-sizing: border-box; }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Números tabulares: precios, km, scores, contadores, timestamps */
+  .tabular,
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
 
   button:not(:disabled) {
@@ -27,9 +147,20 @@
 }
 
 @layer utilities {
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  .safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Trama diagonal para placeholders de foto */
+  .photo-hatch {
+    background: repeating-linear-gradient(135deg, #eaece9 0 6px, #f4f5f3 6px 12px);
+  }
 }
 
 @keyframes shake {
@@ -62,7 +193,7 @@
 @media (hover: hover) and (pointer: fine) {
   .vehicle-card-hover:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 20px rgba(15, 21, 18, 0.08);
   }
 }
 

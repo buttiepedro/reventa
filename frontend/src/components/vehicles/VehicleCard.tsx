@@ -9,18 +9,20 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_CLASSES: Record<string, string> = {
-  available: "bg-green-100 text-green-800",
-  reserved: "bg-yellow-100 text-yellow-800",
-  sold: "bg-red-100 text-red-800",
+  available: "bg-mint text-brand",
+  reserved: "bg-warn-bg text-amber-700",
+  sold: "bg-red-50 text-red-600",
 };
 
 const FUEL_LABELS: Record<string, string> = {
   gasoline: "Nafta",
-  diesel: "Diesel",
+  diesel: "Diésel",
   electric: "Eléctrico",
   hybrid: "Híbrido",
   gnc: "GNC",
 };
+
+const money = (n: number | string) => Number(n).toLocaleString("es-AR");
 
 interface Props {
   vehicle: VehicleListItem;
@@ -31,36 +33,38 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
   const { isClientMode } = useAudience();
   return (
     <Link to={`/vehicles/${vehicle.id}`} className="block">
-      <div className={`vehicle-card-hover bg-white rounded-xl overflow-hidden shadow-sm transition-[transform,box-shadow] duration-200 ease-out ${
-        vehicle.is_favorite_company ? "ring-2 ring-green-500" : "border border-slate-100"
+      <div className={`vehicle-card-hover overflow-hidden rounded-2xl bg-surface transition-[transform,box-shadow] duration-200 ease-out ${
+        vehicle.is_favorite_company ? "ring-1 ring-brand" : "border border-line"
       }`}>
         {/* Image */}
-        <div className="relative aspect-video bg-gray-100">
+        <div className="relative aspect-video bg-canvas">
           {vehicle.primary_image_url ? (
             <img
               src={vehicle.primary_image_url}
               alt={`${vehicle.brand} ${vehicle.model}`}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
               loading="lazy"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sin imagen</div>
+            <div className="flex h-full items-center justify-center photo-hatch font-mono text-[9px] uppercase tracking-[0.08em] text-faint">
+              Sin foto
+            </div>
           )}
-          <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_CLASSES[vehicle.status] ?? "bg-gray-100 text-gray-700"}`}>
+          <span className={`absolute right-2 top-2 rounded-md px-2 py-0.5 text-[11px] font-semibold ${STATUS_CLASSES[vehicle.status] ?? "bg-tab text-muted"}`}>
             {STATUS_LABELS[vehicle.status] ?? vehicle.status}
           </span>
           {vehicle.is_favorite_company && (
-            <span className="absolute top-2 left-2 bg-green-600 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+            <span className="absolute left-2 top-2 rounded-md bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
               ★ Favorita
             </span>
           )}
           {vehicle.distance_km != null && (
-            <span className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+            <span className="absolute bottom-2 right-2 rounded-md bg-ink/70 px-1.5 py-0.5 font-mono text-[10px] text-white backdrop-blur-sm">
               {vehicle.distance_km < 1 ? "< 1 km" : `${Math.round(vehicle.distance_km)} km`}
             </span>
           )}
           {vehicle.is_liquidacion && (
-            <span className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute bottom-2 left-2 rounded-md bg-red-600 px-2 py-0.5 font-mono text-[10px] font-bold text-white">
               LIQUIDACIÓN
             </span>
           )}
@@ -68,41 +72,37 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
 
         {/* Info */}
         <div className="p-3.5">
-          <p className="font-bold text-slate-900 text-base leading-tight">
-            {vehicle.brand} {vehicle.model} <span className="font-normal text-gray-500">{vehicle.year}</span>
+          <p className="text-base font-semibold leading-tight text-ink">
+            {vehicle.brand} {vehicle.model} <span className="font-mono text-sm font-normal text-faint">{vehicle.year}</span>
           </p>
           {vehicle.version && (
-            <p className="text-xs text-gray-500 mt-0.5">{vehicle.version}</p>
+            <p className="mt-0.5 text-xs text-faint">{vehicle.version}</p>
           )}
-          <div className="flex gap-2 flex-wrap mt-2 text-xs text-gray-600">
-            <span>{vehicle.mileage.toLocaleString()} km</span>
-            <span>·</span>
-            <span>{FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type}</span>
-            <span>·</span>
-            <span>{vehicle.transmission === "manual" ? "Manual" : "Automático"}</span>
+          <div className="mt-2 font-mono text-[11.5px] text-faint">
+            {money(vehicle.mileage)} km · {FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type} · {vehicle.transmission === "manual" ? "Manual" : "Automático"}
           </div>
-          <div className="flex justify-between items-end mt-3">
+          <div className="mt-3 flex items-end justify-between">
             {!isClientMode && (
               <div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Reventa</p>
+                <p className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-faint">Reventa</p>
                 {vehicle.is_liquidacion && vehicle.liquidacion_price ? (
                   <>
-                    <p className="text-xs text-gray-400 line-through leading-tight">${Number(vehicle.price_resale).toLocaleString()}</p>
-                    <p className="font-bold text-red-600 text-lg leading-none">${Number(vehicle.liquidacion_price).toLocaleString()}</p>
+                    <p className="font-mono text-xs leading-tight text-faint line-through">USD {money(vehicle.price_resale)}</p>
+                    <p className="font-mono text-lg font-bold leading-none text-red-600">USD {money(vehicle.liquidacion_price)}</p>
                   </>
                 ) : (
-                  <p className="font-bold text-green-600 text-lg leading-none">${Number(vehicle.price_resale).toLocaleString()}</p>
+                  <p className="font-mono text-lg font-bold leading-none text-ink">USD {money(vehicle.price_resale)}</p>
                 )}
               </div>
             )}
             <div className={isClientMode ? "" : "text-right"}>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Precio</p>
-              <p className={`font-bold text-lg leading-none ${isClientMode ? "text-green-600" : "text-gray-700 text-sm font-semibold"}`}>
-                ${Number(vehicle.price_public).toLocaleString()}
+              <p className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-faint">Precio</p>
+              <p className={`font-mono font-bold leading-none ${isClientMode ? "text-lg text-brand" : "text-sm text-muted"}`}>
+                USD {money(vehicle.price_public)}
               </p>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-2">{isClientMode ? "Agencia verificada" : vehicle.company_name}</p>
+          <p className="mt-2 text-xs text-faint">{isClientMode ? "Agencia verificada" : vehicle.company_name}</p>
         </div>
       </div>
     </Link>

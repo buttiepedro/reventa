@@ -68,51 +68,59 @@ function Thermometer({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm font-bold text-gray-800">Termómetro de mercado</p>
-        <span className="text-xs text-gray-400">{result.sample_count} referencia{result.sample_count !== 1 ? "s" : ""} en la red</span>
+    <div className="space-y-4 rounded-2xl border border-line bg-surface p-5">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-faint">Termómetro de mercado</p>
+        <span className="font-mono text-[11px] text-faint">
+          {result.sample_count} ref.{result.sample_count !== 1 ? "s" : ""}
+        </span>
       </div>
 
-      {/* Bar */}
-      <div className="relative h-4 bg-gray-100 rounded-full overflow-visible mx-2">
-        {/* Market range */}
-        <div className="absolute inset-y-0 left-0 right-0 bg-green-100 rounded-full" />
-        {/* Suggested price marker */}
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-1 h-6 bg-green-500 rounded-full z-10"
-          style={{ left: `${suggestedPct}%` }}
-        />
-        {/* Offer price marker */}
-        {offerPct !== null && (
+      {/* Gradient bar: demanda alta → sobreoferta */}
+      <div className="px-1">
+        <div className="relative h-2.5 rounded-full" style={{ background: "linear-gradient(90deg,#1FA34F 0%,#8FC93A 32%,#E8B62C 62%,#D9663A 82%,#B42318 100%)" }}>
+          {/* Suggested price marker */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-amber-500 rounded-full ring-2 ring-white z-20"
-            style={{ left: `${offerPct}%`, transform: "translate(-50%, -50%)" }}
+            className="absolute -top-[3px] h-[16px] w-[3px] -translate-x-1/2 rounded-sm bg-ink"
+            style={{ left: `${suggestedPct}%` }}
+            title="Sugerido"
           />
-        )}
+          {/* Offer price marker */}
+          {offerPct !== null && (
+            <div
+              className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-surface ring-2 ring-ink"
+              style={{ left: `${offerPct}%` }}
+              title="Tu oferta"
+            />
+          )}
+        </div>
+        <div className="mt-1.5 flex justify-between font-mono text-[9.5px] uppercase tracking-[0.06em] text-faint">
+          <span>Demanda alta</span>
+          <span>Sobreoferta</span>
+        </div>
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between text-xs text-gray-400 px-1">
+      <div className="flex justify-between px-1">
         <div>
-          <p className="font-semibold text-gray-600">${Number(market_min).toLocaleString()}</p>
-          <p>Mínimo</p>
+          <p className="font-mono text-[13px] font-semibold text-ink-soft">${Number(market_min).toLocaleString()}</p>
+          <p className="text-[11px] text-faint">Mínimo</p>
         </div>
         <div className="text-center">
-          <p className="font-bold text-green-700">${Number(suggested_price).toLocaleString()}</p>
-          <p className="text-green-600">Sugerido</p>
+          <p className="font-mono text-[13px] font-bold text-brand">${Number(suggested_price).toLocaleString()}</p>
+          <p className="text-[11px] text-brand">Sugerido</p>
         </div>
         <div className="text-right">
-          <p className="font-semibold text-gray-600">${Number(market_max).toLocaleString()}</p>
-          <p>Máximo</p>
+          <p className="font-mono text-[13px] font-semibold text-ink-soft">${Number(market_max).toLocaleString()}</p>
+          <p className="text-[11px] text-faint">Máximo</p>
         </div>
       </div>
 
       {/* Verdict */}
       {offerPrice !== null && verdict && (
-        <div className={`text-center text-sm font-bold ${verdictColor} border-t border-gray-100 pt-3`}>
+        <div className={`border-t border-line-soft pt-3 text-center text-sm font-bold ${verdictColor}`}>
           {verdict}
-          <p className="text-xs font-normal text-gray-400 mt-0.5">
+          <p className="mt-0.5 font-mono text-xs font-normal text-faint">
             Tu oferta: ${Number(offerPrice).toLocaleString()}
           </p>
         </div>
@@ -120,11 +128,11 @@ function Thermometer({
 
       {/* Samples */}
       {result.price_samples.length > 1 && (
-        <div className="border-t border-gray-100 pt-3">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Precios en la red</p>
+        <div className="border-t border-line-soft pt-3">
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.06em] text-faint">Precios en la red</p>
           <div className="flex flex-wrap gap-1.5">
             {result.price_samples.map((p, i) => (
-              <span key={i} className="text-xs bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">
+              <span key={i} className="rounded-md bg-canvas px-2 py-0.5 font-mono text-[11px] text-muted">
                 ${Number(p.toFixed(0)).toLocaleString()}
               </span>
             ))}
@@ -181,10 +189,13 @@ export function Tasador() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Tasador</h1>
+      <div>
+        <h1 className="text-[22px] font-bold tracking-tight text-ink">Tasador</h1>
+        <p className="mt-0.5 text-[13px] text-faint">Media recortada sobre operaciones comparables de la red</p>
+      </div>
 
-      <form onSubmit={handleValuate} className="bg-white rounded-xl shadow-sm p-5 space-y-4">
-        <p className="text-sm font-semibold text-gray-700">Ingresá los datos de la toma</p>
+      <form onSubmit={handleValuate} className="space-y-4 rounded-2xl border border-line bg-surface p-5">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-faint">Datos de la toma</p>
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="Marca *"
@@ -229,7 +240,7 @@ export function Tasador() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold disabled:opacity-50"
+          className="w-full rounded-[10px] bg-brand py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-50"
         >
           {loading ? "Calculando..." : "Tasar"}
         </button>
@@ -244,10 +255,10 @@ export function Tasador() {
       {result && !loading && (
         <>
           {result.sample_count === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div className="rounded-2xl border border-line bg-surface p-8 text-center">
               <p className="text-2xl mb-2">🔍</p>
-              <p className="text-sm font-semibold text-gray-700">Sin referencias en la red</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-sm font-semibold text-ink-soft">Sin referencias en la red</p>
+              <p className="mt-1 text-xs text-faint">
                 No hay vehículos similares disponibles en la red aún.
                 El tasador mejora a medida que más agencias carguen stock.
               </p>
@@ -257,8 +268,8 @@ export function Tasador() {
               <Thermometer result={result} offerPrice={offerPrice} />
 
               {/* Deducciones */}
-              <div className="bg-white rounded-xl shadow-sm p-5 space-y-3">
-                <p className="text-sm font-bold text-gray-800">Deducciones por estado</p>
+              <div className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-faint">Deducciones por estado</p>
                 <div className="space-y-2">
                   {DEDUCCION_ITEMS.map(({ key, label, amount }) => (
                     <label key={key} className="flex items-center justify-between cursor-pointer">
@@ -274,36 +285,49 @@ export function Tasador() {
                       <span className="text-sm text-red-500 font-semibold">-${amount.toLocaleString()}</span>
                     </label>
                   ))}
-                  <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-                    <span className="text-sm text-gray-700 shrink-0">Otra deducción ($)</span>
+                  <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-2">
+                    <span className="shrink-0 text-sm text-ink-soft">Otra deducción ($)</span>
                     <input
                       type="number"
                       min={0}
                       value={deducciones.custom}
                       onChange={(e) => setDeducciones((d) => ({ ...d, custom: e.target.value }))}
                       placeholder="0"
-                      className="w-28 text-right text-sm border border-gray-200 rounded-lg px-2 py-1"
+                      className="w-28 rounded-[10px] border border-line px-2.5 py-1.5 text-right font-mono text-sm text-ink focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
                     />
                   </div>
                 </div>
 
                 {totalDeduccion > 0 && result.suggested_price && (
-                  <div className="border-t border-gray-100 pt-3 space-y-1">
-                    <div className="flex justify-between text-xs text-gray-500">
+                  <div className="space-y-1 border-t border-line-soft pt-3">
+                    <div className="flex justify-between text-xs text-muted">
                       <span>Precio sugerido de red</span>
-                      <span>${Number(result.suggested_price).toLocaleString()}</span>
+                      <span className="font-mono">${Number(result.suggested_price).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-red-500">
+                    <div className="flex justify-between text-xs text-red-600">
                       <span>Total deducciones</span>
-                      <span>-${totalDeduccion.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-bold text-green-700 pt-1 border-t border-gray-100">
-                      <span>Precio máximo de toma</span>
-                      <span>${Math.max(0, result.suggested_price - totalDeduccion).toLocaleString()}</span>
+                      <span className="font-mono">-${totalDeduccion.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Precio máximo de toma — dark card */}
+              {result.suggested_price != null && (
+                <div className="rounded-2xl bg-ink p-5">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "#7FCB9C" }}>
+                    Precio máximo de toma sugerido
+                  </p>
+                  <p className="mt-2 font-mono text-[32px] font-bold leading-none tracking-tight text-white">
+                    ${Math.max(0, result.suggested_price - totalDeduccion).toLocaleString()}
+                  </p>
+                  <p className="mt-2.5 text-[12px] leading-relaxed" style={{ color: "#A5AEA9" }}>
+                    {totalDeduccion > 0
+                      ? `Calculado restando $${totalDeduccion.toLocaleString()} en deducciones del precio sugerido de la red.`
+                      : "Basado en la media recortada de operaciones comparables de la red."}
+                  </p>
+                </div>
+              )}
             </>
           )}
         </>

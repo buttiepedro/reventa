@@ -19,44 +19,64 @@ interface InboxItem {
   created_at: string;
 }
 
-function MatchCard({ item, onAccept, onReject }: { item: InboxItem; onAccept: (id: string) => void; onReject: (id: string) => void }) {
+const fmt = (n: number) => Number(n).toLocaleString("es-AR");
+
+function MatchCard({ item, index, total, onAccept, onReject }: {
+  item: InboxItem;
+  index: number;
+  total: number;
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-green-100 p-4 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs text-green-600 font-semibold uppercase tracking-wide">Oferta en La Lonja</p>
-          <p className="font-bold text-gray-900 text-sm leading-snug">{item.vehicle_label}</p>
-          <p className="text-xs text-gray-500">{item.offering_company_name} · ${Number(item.vehicle_price).toLocaleString()}</p>
-        </div>
-        {item.rank_score != null && (
-          <span className="shrink-0 text-xs font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
-            {Math.round(Number(item.rank_score))} pts
-          </span>
-        )}
+    <div className="overflow-hidden rounded-2xl border border-brand bg-surface">
+      <div className="flex items-center gap-2 bg-brand px-4 py-2.5">
+        <span className="h-[7px] w-[7px] rounded-full bg-white" />
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-white">
+          Match directo de La Lonja
+        </span>
+        <span className="ml-auto font-mono text-[11px] text-white/75">{index + 1} de {total}</span>
       </div>
-      <div className="flex gap-2 pt-1">
-        <button
-          onClick={() => onAccept(item.offer_id)}
-          className="flex-1 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg"
-        >
-          Aceptar
-        </button>
-        <button
-          onClick={() => onReject(item.offer_id)}
-          className="flex-1 py-1.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg"
-        >
-          Rechazar
-        </button>
-        {item.whatsapp_url && (
-          <a
-            href={item.whatsapp_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 bg-[#25D366] text-white text-xs font-semibold rounded-lg flex items-center gap-1"
-          >
-            WA
-          </a>
+      <div className="p-4 sm:p-5">
+        <p className="text-[13.5px] leading-snug text-muted">
+          <span className="font-semibold text-ink">{item.offering_company_name}</span> ofrece de contado por tu{" "}
+          <span className="font-semibold text-ink">{item.vehicle_label}</span>
+        </p>
+        <p className="mt-1.5 font-mono text-[28px] font-bold leading-none tracking-tight text-ink">
+          USD {fmt(item.vehicle_price)}
+        </p>
+        {item.rank_score != null && (
+          <div className="mt-2.5 flex gap-3.5 font-mono text-[12px] text-faint">
+            <span>SCORE {Math.round(Number(item.rank_score))}</span>
+          </div>
         )}
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={() => onAccept(item.offer_id)}
+            className="flex-[1.2] rounded-[10px] bg-brand py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-strong"
+          >
+            Aceptar oferta
+          </button>
+          <button
+            onClick={() => onReject(item.offer_id)}
+            className="flex-1 rounded-[10px] border border-line py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+          >
+            Rechazar
+          </button>
+          {item.whatsapp_url && (
+            <a
+              href={item.whatsapp_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Abrir WhatsApp"
+              className="flex w-14 items-center justify-center rounded-[10px] border border-line text-brand transition-colors hover:bg-mint"
+            >
+              <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12Z" />
+              </svg>
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -69,22 +89,25 @@ interface HomeStats {
   vehiculos_publicados: number;
 }
 
-function timeAgo(dateStr: string) {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60) return "ahora";
-  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
-  return `hace ${Math.floor(diff / 86400)} d`;
-}
-
-const ALERT_ICON: Record<string, string> = {
-  pre_toma: "🚗",
-  pre_toma_interest: "⭐",
-  favorite_request: "🤝",
-  favorite_accepted: "✅",
-  direct_match: "🎯",
-  rating_pending: "⭐",
+const ALERT_TONE: Record<string, { bg: string; dot: string }> = {
+  pre_toma: { bg: "bg-mint", dot: "bg-brand" },
+  pre_toma_interest: { bg: "bg-mint", dot: "bg-brand" },
+  direct_match: { bg: "bg-mint", dot: "bg-brand" },
+  favorite_request: { bg: "bg-warn-bg", dot: "bg-amber-600" },
+  favorite_accepted: { bg: "bg-mint", dot: "bg-brand" },
+  rating_pending: { bg: "bg-warn-bg", dot: "bg-amber-600" },
 };
+
+function SectionLabel({ children, action, onAction }: { children: React.ReactNode; action?: string; onAction?: () => void }) {
+  return (
+    <div className="mb-2.5 flex items-baseline justify-between">
+      <span className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-faint">{children}</span>
+      {action && (
+        <button onClick={onAction} className="text-[12.5px] font-semibold text-brand">{action}</button>
+      )}
+    </div>
+  );
+}
 
 export function Home() {
   const { user } = useAuth();
@@ -133,101 +156,113 @@ export function Home() {
     else if (n.entity_type === "direct_match") navigate("/lonja");
   };
 
+  const statCards = [
+    { label: "Consultas recibidas", value: stats.consultas_recibidas, mint: false },
+    { label: "Ofertas pendientes", value: stats.ofertas_pendientes, mint: false },
+    { label: "Match directos", value: stats.match_directos, mint: true },
+    { label: "Vehículos publicados", value: stats.vehiculos_publicados, mint: false },
+  ];
+
+  const pending = inbox.length;
+
   return (
     <div className="space-y-5">
       {/* Greeting */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">
-          Hola, {user?.full_name?.split(" ")[0]} 👋
+      <div className="flex items-baseline gap-3">
+        <h1 className="text-[22px] font-bold tracking-tight text-ink">
+          Hola, {user?.full_name?.split(" ")[0] ?? ""}
         </h1>
-        <p className="text-sm text-gray-500">Resumen de actividad reciente</p>
+        <span className="text-[13px] text-faint">
+          {pending > 0 ? `${pending} ${pending === 1 ? "decisión te espera" : "decisiones te esperan"}` : "Todo al día"}
+        </span>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          { label: "Consultas", value: stats.consultas_recibidas },
-          { label: "Ofertas", value: stats.ofertas_pendientes },
-          { label: "Matches", value: stats.match_directos },
-          { label: "En stock", value: stats.vehiculos_publicados },
-        ].map((s, i) => (
-          <div key={s.label} className={`animate-fade-up stagger-${i + 1} bg-white rounded-xl p-3 text-center shadow-sm border border-slate-100`}>
-            <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => navigate("/mercado")}
-          className="bg-green-600 text-white rounded-xl px-4 py-3 text-sm font-semibold text-left shadow-sm active:bg-green-700"
-        >
-          <span className="block text-lg mb-0.5">🛒</span>
-          Ver Mercado
-        </button>
-        <button
-          onClick={() => navigate("/lonja")}
-          className="bg-gray-900 text-white rounded-xl px-4 py-3 text-sm font-semibold text-left shadow-sm active:bg-gray-800"
-        >
-          <span className="block text-lg mb-0.5">📋</span>
-          La Lonja
-        </button>
-      </div>
-
-      {/* Inbox — pending Lonja offers */}
-      {inbox.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-gray-800 mb-2">Ofertas pendientes en La Lonja</h2>
-          <div className="space-y-2">
-            {inbox.map((item) => (
+      <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr] lg:items-start">
+        {/* Left column — matches */}
+        <div className="space-y-4">
+          {inbox.length > 0 ? (
+            inbox.map((item, i) => (
               <MatchCard
                 key={item.id}
                 item={item}
+                index={i}
+                total={inbox.length}
                 onAccept={(id) => handleOfferAction(id, "accepted")}
                 onReject={(id) => handleOfferAction(id, "rejected")}
               />
-            ))}
+            ))
+          ) : (
+            <div className="rounded-2xl border border-line bg-surface p-8 text-center">
+              <p className="text-sm font-semibold text-ink-soft">No hay match directos pendientes</p>
+              <p className="mt-1 text-xs text-faint">Las ofertas de La Lonja aparecerán acá.</p>
+            </div>
+          )}
+
+          {/* Quick access (mobile-friendly) */}
+          <div className="grid grid-cols-2 gap-3 lg:hidden">
+            <button
+              onClick={() => navigate("/mercado")}
+              className="rounded-2xl bg-brand px-4 py-3.5 text-left text-sm font-semibold text-white transition-colors hover:bg-brand-strong"
+            >
+              Ver Mercado
+            </button>
+            <button
+              onClick={() => navigate("/lonja")}
+              className="rounded-2xl bg-ink px-4 py-3.5 text-left text-sm font-semibold text-white transition-colors hover:opacity-90"
+            >
+              La Lonja
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-gray-800">Alertas y novedades</h2>
-          </div>
-          <div className="space-y-2">
-            {alerts.slice(0, 6).map((n) => (
-              <button
-                key={n.id}
-                onClick={() => handleAlertClick(n)}
-                className={`w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm flex items-start gap-3 active:bg-gray-50 ${!n.is_read ? "border-l-4 border-green-500" : ""}`}
+        {/* Right column — stats + alerts */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2.5">
+            {statCards.map((s) => (
+              <div
+                key={s.label}
+                className={`rounded-xl border p-3.5 ${s.mint ? "border-mint-border bg-mint" : "border-line bg-surface"}`}
               >
-                <span className="text-xl shrink-0">{ALERT_ICON[n.entity_type ?? ""] ?? "🔔"}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-800 leading-snug">{n.title}</p>
-                  {n.body && <p className="text-xs text-gray-500 mt-0.5 truncate">{n.body}</p>}
-                  <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
+                <div className={`font-mono text-[26px] font-bold leading-none ${s.mint ? "text-brand" : "text-ink"}`}>
+                  {s.value}
                 </div>
-                <svg className="w-4 h-4 text-gray-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+                <div className={`mt-1.5 text-[11.5px] ${s.mint ? "text-mint-ink" : "text-faint"}`}>{s.label}</div>
+              </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {alerts.length === 0 && (
-        <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-          <p className="text-3xl mb-2">🎉</p>
-          <p className="text-sm font-medium text-gray-700">Todo al día</p>
-          <p className="text-xs text-gray-400 mt-1">No tenés alertas pendientes</p>
+          <div>
+            <SectionLabel>Alertas y novedades</SectionLabel>
+            {alerts.length > 0 ? (
+              <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+                {alerts.slice(0, 6).map((n) => {
+                  const tone = ALERT_TONE[n.entity_type ?? ""] ?? { bg: "bg-tab", dot: "bg-faint" };
+                  return (
+                    <button
+                      key={n.id}
+                      onClick={() => handleAlertClick(n)}
+                      className="flex w-full items-center gap-3 border-b border-line-soft px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-canvas"
+                    >
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] ${tone.bg}`}>
+                        <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12.5px] font-semibold leading-snug text-ink">{n.title}</span>
+                        {n.body && <span className="mt-0.5 block truncate text-[11.5px] text-faint">{n.body}</span>}
+                      </span>
+                      <span className="shrink-0 text-[12px] font-semibold text-brand">Ver</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-line bg-surface p-6 text-center">
+                <p className="text-sm font-medium text-ink-soft">Sin alertas pendientes</p>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {ratingModal && (
         <RatingModal

@@ -61,16 +61,19 @@ function SmartSearch({ onSearch }: { onSearch: (mode: SearchMode, value: string)
   };
 
   return (
-    <div className="relative">
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="Buscar marca, modelo, patente o presupuesto..."
-        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-      />
+    <div>
+      <div className="flex items-center gap-2.5 rounded-[10px] border border-line bg-fill px-3 focus-within:border-brand focus-within:bg-surface focus-within:ring-[3px] focus-within:ring-brand/15">
+        <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-[10px] font-semibold text-faint">⌘K</kbd>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Patente, presupuesto, marca…"
+          className="w-full bg-transparent py-2.5 text-sm text-ink placeholder-faint focus:outline-none"
+        />
+      </div>
       {mode && (
-        <p className="mt-1 text-[11px] text-gray-400 pl-1">{hints[mode]}</p>
+        <p className="mt-1.5 pl-1 font-mono text-[11px] text-faint">{hints[mode]}</p>
       )}
     </div>
   );
@@ -79,24 +82,25 @@ function SmartSearch({ onSearch }: { onSearch: (mode: SearchMode, value: string)
 type Tab = "stock" | "pre_toma" | "liquidaciones";
 
 function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
-  const tabs: { id: Tab; label: string }[] = [
+  const tabs: { id: Tab; label: string; ttl?: string }[] = [
+    { id: "pre_toma", label: "Pre-tomas", ttl: "24h" },
+    { id: "liquidaciones", label: "Liquidaciones", ttl: "72h" },
     { id: "stock", label: "Stock" },
-    { id: "pre_toma", label: "Pre-Tomas (24hs)" },
-    { id: "liquidaciones", label: "Liquidaciones (72hs)" },
   ];
   return (
-    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+    <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
       {tabs.map((t) => (
         <button
           key={t.id}
           onClick={() => onChange(t.id)}
-          className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+          className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
             active === t.id
-              ? "bg-green-600 text-white shadow-sm"
-              : "bg-white text-gray-500 border border-gray-200"
+              ? "bg-ink text-white"
+              : "border border-line bg-surface text-muted"
           }`}
         >
           {t.label}
+          {t.ttl && <span className="font-mono text-[11px] opacity-60">{t.ttl}</span>}
         </button>
       ))}
     </div>
@@ -118,7 +122,7 @@ function PreTomaFeedTab() {
 
   if (vehicles.length === 0) {
     return (
-      <div className="bg-white rounded-xl p-8 text-center shadow-sm">
+      <div className="rounded-2xl border border-line bg-surface p-8 text-center">
         <p className="text-3xl mb-2">🚗</p>
         <p className="text-sm font-semibold text-gray-700">Sin pre-tomas activas</p>
         <p className="text-xs text-gray-400 mt-1">Las pre-tomas de tus favoritas confirmadas aparecerán acá.</p>
@@ -158,7 +162,7 @@ function LiquidacionesTab() {
 
   if (vehicles.length === 0) {
     return (
-      <div className="bg-white rounded-xl p-8 text-center shadow-sm">
+      <div className="rounded-2xl border border-line bg-surface p-8 text-center">
         <p className="text-3xl mb-2">🔖</p>
         <p className="text-sm font-semibold text-gray-700">Sin liquidaciones activas</p>
         <p className="text-xs text-gray-400 mt-1">Vehículos en liquidación (72hs) aparecen acá.</p>
@@ -250,7 +254,20 @@ export function Mercado() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Mercado</h1>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="text-[22px] font-bold tracking-tight text-ink">Mercado</h1>
+          <p className="mt-0.5 text-[13px] text-faint">Comprá y vendé dentro de tu red</p>
+        </div>
+        {userLocation && (
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="h-[7px] w-[7px] rounded-full bg-brand" />
+            <span className="text-[12px] font-medium text-muted">
+              Radio {activeRadius != null ? `${activeRadius} km` : "país"}
+            </span>
+          </div>
+        )}
+      </div>
 
       <TabToggle active={tab} onChange={setTab} />
 
@@ -265,26 +282,26 @@ export function Mercado() {
               onClick={userLocation ? clearGeo : handleGeolocate}
               disabled={geoLoading}
               title={userLocation ? "Quitar ubicación" : "Usar mi ubicación"}
-              className={`shrink-0 p-2 rounded-xl text-sm font-semibold border transition-colors ${
+              className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] border text-sm font-semibold transition-colors disabled:opacity-50 ${
                 userLocation
-                  ? "bg-blue-50 border-blue-200 text-blue-600"
-                  : "bg-gray-100 border-gray-200 text-gray-500"
-              } disabled:opacity-50`}
+                  ? "border-mint-border bg-mint text-brand"
+                  : "border-line bg-surface text-muted"
+              }`}
             >
               {geoLoading ? <Spinner /> : "📍"}
             </button>
           </div>
 
           {userLocation && (
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
               {RADIUS_OPTIONS.map((opt) => (
                 <button
                   key={opt.label}
                   onClick={() => setActiveRadius(opt.value)}
-                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                  className={`shrink-0 rounded-2xl px-3 py-1 text-xs font-semibold transition-colors ${
                     activeRadius === opt.value
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-600 border border-gray-200"
+                      ? "bg-ink text-white"
+                      : "border border-line bg-surface text-muted"
                   }`}
                 >
                   {opt.label}
@@ -298,7 +315,7 @@ export function Mercado() {
           {!loading && !error && result && (
             <>
               {result.items.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 text-center shadow-sm">
+                <div className="rounded-2xl border border-line bg-surface p-8 text-center">
                   <p className="text-3xl mb-2">🔍</p>
                   <p className="text-sm font-semibold text-gray-700">Sin resultados</p>
                   <p className="text-xs text-gray-400 mt-1">Probá con otros filtros.</p>

@@ -5,7 +5,7 @@ interface Props {
   onChange: (filters: VehicleFilters) => void;
 }
 
-const inputCls = "rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-[border-color,box-shadow] duration-150";
+const inputCls = "rounded-[10px] border border-line px-3 py-2 text-sm text-ink bg-surface placeholder-faint focus:outline-none focus:border-brand focus:ring-[3px] focus:ring-brand/15 transition-[border-color,box-shadow] duration-150";
 
 export function FilterBar({ filters, onChange }: Props) {
   const set = (key: keyof VehicleFilters, value: string) => {
@@ -13,7 +13,7 @@ export function FilterBar({ filters, onChange }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6">
+    <div className="mb-6 rounded-2xl border border-line bg-surface p-4">
       <div className="flex flex-wrap gap-3 items-end">
         <input
           className={`${inputCls} w-32`}
