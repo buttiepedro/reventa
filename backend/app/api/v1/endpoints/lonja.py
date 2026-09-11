@@ -311,8 +311,10 @@ async def submit_offer(
 
     async def _push_new_offer() -> None:
         from app.services.push import send_push
+        from app.services.whatsapp_notify import notify_whatsapp
         async with AsyncSessionLocal() as bg:
             await send_push(bg, _req_company_id, f"Nueva oferta en La Lonja: {_label}", "Revisá las ofertas recibidas", "/lonja")
+            await notify_whatsapp(bg, _req_company_id, "nueva_oferta", {"label": _label})
             await bg.commit()
 
     asyncio.create_task(_push_new_offer())
@@ -364,8 +366,10 @@ async def update_offer_status(
 
         async def _push_accepted() -> None:
             from app.services.push import send_push
+            from app.services.whatsapp_notify import notify_whatsapp
             async with AsyncSessionLocal() as bg:
                 await send_push(bg, _offering_cid, f"¡Oferta aceptada! {vehicle_label}", "Tu oferta en La Lonja fue aceptada.", "/lonja")
+                await notify_whatsapp(bg, _offering_cid, "oferta_aceptada", {"label": vehicle_label})
                 await bg.commit()
 
         asyncio.create_task(_push_accepted())

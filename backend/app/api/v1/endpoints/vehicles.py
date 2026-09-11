@@ -134,9 +134,12 @@ async def create_vehicle(
         company_ids = [c.id for c in companies]
 
         async def _push_pretoma() -> None:
+            from app.services.whatsapp_notify import notify_whatsapp
             async with AsyncSessionLocal() as bg_session:
                 for cid in company_ids:
                     await send_push(bg_session, cid, f"Nueva Pre-Toma: {label}", f"Publicada ahora en la red", "/")
+                # One call for the whole network, not one per agency.
+                await notify_whatsapp(bg_session, company_ids, "nueva_pretoma", {"label": label})
                 await bg_session.commit()
 
         asyncio.create_task(_push_pretoma())
