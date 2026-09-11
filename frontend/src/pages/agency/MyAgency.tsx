@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { companyService, type CompanyProfileUpdate, type RadarEntryCreate } from "@/services/companyService";
 import { favoriteService, type FavoriteRequest } from "@/services/favoriteService";
+import { whatsappService, type LinkCode, type LinkStatus } from "@/services/whatsappService";
 import { api } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import { ReputationBadge } from "@/components/ReputationBadge";
@@ -234,6 +235,127 @@ function LogoUploader({ profile, onLogoChange }: { profile: CompanyProfile; onLo
 
 // ─── Profile Tab ─────────────────────────────────────────────
 
+// ─── WhatsApp link ───────────────────────────────────────────
+
+function WhatsAppCard() {
+  const [status, setStatus] = useState<LinkStatus | null>(null);
+  const [code, setCode] = useState<LinkCode | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const reload = () => whatsappService.getStatus().then(setStatus).catch(() => setStatus(null));
+
+  useEffect(() => { reload(); }, []);
+
+  // The agent is optional infrastructure: if it is not deployed, say nothing.
+  if (status === null) return null;
+
+  const handleConnect = async () => {
+    setBusy(true);
+    try {
+      setCode(await whatsappService.requestCode());
+    } catch {
+      toast.error("No se pudo generar el código.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleToggleNotifications = async () => {
+    if (!status.linked) return;
+    const next = !status.notifications_enabled;
+    setStatus({ ...status, notifications_enabled: next });  // optimistic: it is a switch
+    try {
+      await whatsappService.setNotifications(next);
+    } catch {
+      setStatus({ ...status, notifications_enabled: !next });
+      toast.error("No se pudo cambiar el aviso.");
+    }
+  };
+
+  const handleRevoke = async () => {
+    setBusy(true);
+    try {
+      await whatsappService.revoke();
+      setCode(null);
+      toast.success("Número desvinculado.");
+      reload();
+    } catch {
+      toast.error("No se pudo desvincular.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-5 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold text-ink">Asistente por WhatsApp</h2>
+          <p className="mt-0.5 text-[13px] text-muted">
+            Vinculá tu número y consultá el stock de la red desde WhatsApp.
+          </p>
+        </div>
+        {status.linked && (
+          <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-[11px] font-semibold text-brand">
+            Vinculado
+          </span>
+        )}
+      </div>
+
+      {status.linked ? (
+        <div className="space-y-3 border-t border-line pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-ink">{status.phone_masked}</p>
+            <button
+              onClick={handleRevoke}
+              disabled={busy}
+              className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+            >
+              Desvincular
+            </button>
+          </div>
+          <label className="flex cursor-pointer items-center justify-between gap-3">
+            <span className="text-[13px] text-muted">
+              Avisarme por WhatsApp de ofertas y pre-tomas
+            </span>
+            <input
+              type="checkbox"
+              checked={status.notifications_enabled}
+              onChange={handleToggleNotifications}
+              className="h-4 w-4 shrink-0 accent-brand"
+            />
+          </label>
+        </div>
+      ) : code ? (
+        <div className="space-y-2 border-t border-line pt-3">
+          <p className="text-[13px] text-muted">
+            Mandá este código por WhatsApp
+            {code.whatsapp_number ? <> al <span className="font-semibold text-ink">{code.whatsapp_number}</span></> : null}:
+          </p>
+          <p className="font-mono text-[28px] font-bold tracking-[0.2em] text-ink">{code.code}</p>
+          <p className="text-[12px] text-faint">
+            Vence a las {new Date(code.expires_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}.
+            Cuando lo mandes, el asistente te confirma acá mismo por chat.
+          </p>
+          <button onClick={handleConnect} disabled={busy} className="text-xs font-semibold text-brand hover:underline disabled:opacity-50">
+            Generar otro código
+          </button>
+        </div>
+      ) : (
+        <div className="border-t border-line pt-3">
+          <button
+            onClick={handleConnect}
+            disabled={busy}
+            className="rounded-[10px] bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-50"
+          >
+            {busy ? "Generando..." : "Conectar WhatsApp"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfileTab() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [editing, setEditing] = useState(false);
@@ -285,6 +407,8 @@ function ProfileTab() {
     return (
       <div className="space-y-3">
         <CuitBanner profile={profile} onSubmit={handleCuitSubmit} />
+
+        <WhatsAppCard />
 
         <div className="rounded-2xl border border-line bg-surface p-5 space-y-4">
           <div className="flex justify-between items-start">
