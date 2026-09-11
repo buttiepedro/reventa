@@ -22,6 +22,16 @@ def create_access_token(user_id: str) -> str:
     return jwt.encode({"sub": user_id, "exp": expire}, settings.secret_key, algorithm=_ALGORITHM)
 
 
+def create_service_token(user_id: str, svc: str) -> str:
+    """Short-lived token minted for a background service acting on behalf of a user.
+
+    Carries a `svc` claim so the origin of the call stays auditable; it is otherwise a
+    normal access token, so the service inherits exactly that user's permissions.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.service_token_expire_minutes)
+    return jwt.encode({"sub": user_id, "svc": svc, "exp": expire}, settings.secret_key, algorithm=_ALGORITHM)
+
+
 def decode_token(token: str) -> str:
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[_ALGORITHM])

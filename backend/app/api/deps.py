@@ -1,10 +1,12 @@
+import secrets
 import uuid
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import Role, User
@@ -43,3 +45,12 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role not in (Role.SUPER_ADMIN, Role.COMPANY_ADMIN):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required")
     return current_user
+
+
+async def require_service_key(x_service_key: str = Header(default="")) -> None:
+    """Guards the endpoints the WhatsApp agent calls machine-to-machine.
+
+    Unset key means the integration is not provisioned — deny rather than run open.
+    """
+    if not settings.agent_service_key or not secrets.compare_digest(x_service_key, settings.agent_service_key):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid service key")

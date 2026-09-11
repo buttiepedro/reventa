@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_claim_email: str = "noreply@reventa.app"
 
+    # Agente WhatsApp — servicio externo que opera vía API
+    agent_service_key: str = ""
+    agent_base_url: str = "http://agent:8100"
+    service_token_expire_minutes: int = 5
+
     # Comma-separated list of allowed CORS origins
     cors_origins: str = "http://localhost:5173"
 
