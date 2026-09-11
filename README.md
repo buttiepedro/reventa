@@ -9,6 +9,7 @@ Full-stack application with React, FastAPI, and PostgreSQL, containerized with D
 | Frontend | React 18, TypeScript, Vite        |
 | Backend  | FastAPI, SQLAlchemy (async), Alembic |
 | Database | PostgreSQL 16                     |
+| Agent    | FastAPI, arq + Redis, Claude, WhatsApp Cloud API |
 | Infra    | Docker, Docker Compose            |
 
 ## Project Structure
@@ -22,6 +23,13 @@ reventa/
 │       ├── hooks/         # Custom React hooks
 │       ├── services/      # API communication layer
 │       └── types/         # TypeScript type definitions
+├── agent/             # WhatsApp agent — talks to the backend over /api/v1 only
+│   ├── app/
+│   │   ├── api/           # Meta webhook + internal linking endpoints
+│   │   ├── models/        # Own tables, in the `agent` Postgres schema
+│   │   ├── services/      # Meta client, Reventa client, tools, Claude loop
+│   │   └── worker.py      # arq worker — processes every inbound message
+│   └── alembic/
 ├── backend/           # FastAPI application
 │   └── app/
 │       ├── api/v1/        # Route handlers (versioned)
@@ -60,6 +68,7 @@ docker compose up --build
 | Frontend | http://localhost:5173       |
 | Backend  | http://localhost:8000       |
 | API Docs | http://localhost:8000/docs  |
+| Agent    | http://localhost:8100       |
 
 ### 3. Run database migrations
 

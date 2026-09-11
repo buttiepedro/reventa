@@ -31,6 +31,18 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -46,6 +58,42 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${AGENT_PORT:-8100}:8100"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./agent:/app
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8100/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  agent-worker:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    command: ["arq", "app.worker.WorkerSettings"]
+    depends_on:
+      agent:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./agent:/app
 
   frontend:
     build:
@@ -63,3 +111,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
