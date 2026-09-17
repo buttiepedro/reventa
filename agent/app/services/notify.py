@@ -1,6 +1,6 @@
 """Proactive messages: the agent starting a conversation instead of answering one.
 
-Three gates stand between a Reventa event and someone's phone, and all three must
+Three gates stand between a Stockar event and someone's phone, and all three must
 open: the template is on the enabled list, the user has not opted out, and Meta
 will accept the message. Anything that does not go out is recorded with its reason.
 """

@@ -9,7 +9,7 @@ from app.core.database import Base
 
 
 class WhatsAppLink(Base):
-    """Verified binding between a phone number and a Reventa user.
+    """Verified binding between a phone number and a Stockar user.
 
     `user_id` has no FK: it points at another schema the agent must not depend on.
     A user whose account is gone simply fails to mint a token.

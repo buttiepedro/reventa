@@ -12,7 +12,7 @@ AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
 class Base(DeclarativeBase):
-    """Every agent table lives in its own schema, apart from Reventa's."""
+    """Every agent table lives in its own schema, apart from Stockar's."""
 
     metadata = MetaData(schema=settings.db_schema)
 

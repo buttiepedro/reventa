@@ -47,7 +47,7 @@ export function PublicShare() {
     <div className="min-h-screen bg-gray-50">
       {/* Branding bar */}
       <div className="bg-blue-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto text-white font-black text-lg tracking-tight">Reventa</div>
+        <div className="max-w-4xl mx-auto text-white font-black text-lg tracking-tight">Stockar</div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-10">

@@ -10,9 +10,9 @@ created: 2026-07-29
 
 ## Resumen
 
-Segundo frontend completo como Progressive Web App (PWA), desplegado en un **subdominio** del dominio principal (ej: `express.reventa.app`). Orientado 100% a mobile. Permite que un playero o captador cargue una pre-toma desde el campo en ~30 segundos (3 fotos + precio) y reciba notificaciones push vía VAPID sin necesidad de una app nativa.
+Segundo frontend completo como Progressive Web App (PWA), desplegado en un **subdominio** del dominio principal (ej: `express.stockar.app`). Orientado 100% a mobile. Permite que un playero o captador cargue una pre-toma desde el campo en ~30 segundos (3 fotos + precio) y reciba notificaciones push vía VAPID sin necesidad de una app nativa.
 
-El frontend principal (`reventa.app`) no cambia su stack. Este es un proyecto Vite/React independiente que comparte la misma API backend.
+El frontend principal (`stockar.app`) no cambia su stack. Este es un proyecto Vite/React independiente que comparte la misma API backend.
 
 ---
 
@@ -116,7 +116,7 @@ POST   /push/test             → envía notificación de prueba (solo admin)
 ```
 VAPID_PUBLIC_KEY=...
 VAPID_PRIVATE_KEY=...
-VAPID_CLAIM_EMAIL=noreply@reventa.app
+VAPID_CLAIM_EMAIL=noreply@stockar.app
 ```
 
 Generar con:
@@ -175,7 +175,7 @@ self.addEventListener('notificationclick', (event) => {
 ```
 
 ### Frontend principal — también puede suscribirse
-El frontend principal (`reventa.app`) puede incluir el mismo bloque de suscripción en su `App.tsx` después del login. Las notificaciones push llegarán al device esté en el subdominio o en el principal.
+El frontend principal (`stockar.app`) puede incluir el mismo bloque de suscripción en su `App.tsx` después del login. Las notificaciones push llegarán al device esté en el subdominio o en el principal.
 
 ---
 

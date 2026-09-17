@@ -9,13 +9,13 @@ implemented: 2026-06-30
 
 ## Purpose
 
-Herramienta que ayuda a las agencias a calcular el precio máximo al que les conviene tomar un vehículo usado, considerando el precio de mercado de ese modelo en la red Reventa, el margen de ganancia objetivo y los descuentos por estado del vehículo.
+Herramienta que ayuda a las agencias a calcular el precio máximo al que les conviene tomar un vehículo usado, considerando el precio de mercado de ese modelo en la red Stockar, el margen de ganancia objetivo y los descuentos por estado del vehículo.
 
 El "Termómetro de Mercado" muestra si hay muchos o pocos vehículos similares en la red, lo que impacta directamente en cuánto tiempo tardará en venderse.
 
 ## Conceptos clave
 
-- **Precio Gremio**: precio promedio al que se están vendiendo vehículos del mismo modelo/año en la red Reventa. Se calcula sobre los vehículos `status=sold` o sobre los `status=available` como referencia.
+- **Precio Gremio**: precio promedio al que se están vendiendo vehículos del mismo modelo/año en la red Stockar. Se calcula sobre los vehículos `status=sold` o sobre los `status=available` como referencia.
 - **Termómetro de Mercado**: indicador de demanda/oferta. Verde = poca oferta (buen momento para tomar), Rojo = mucha oferta (venta lenta, mayor riesgo).
 - **Precio Máximo de Toma Sugerido**: `precio_gremio × (1 - margen/100) - descuentos_detectados`.
 - **Descuentos por estado**: cubiertas gastadas, problemas de chapa, etc. Configurables por el sistema.

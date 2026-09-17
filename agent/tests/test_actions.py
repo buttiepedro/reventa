@@ -1,4 +1,4 @@
-"""Nothing reaches Reventa without an explicit confirmation. That is the rule."""
+"""Nothing reaches Stockar without an explicit confirmation. That is the rule."""
 
 from datetime import datetime, timedelta, timezone
 
@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.models.action import AgentAction
 from app.services import actions, agent
 from tests.conftest import needs_db
-from tests.fakes import FakeMeta, FakeReventa
+from tests.fakes import FakeMeta, FakeStockar
 
 pytestmark = needs_db
 
@@ -30,7 +30,7 @@ async def conversation(session, phone, user_id):
 
 
 async def test_proposing_does_not_write(conversation):
-    client = FakeReventa()
+    client = FakeStockar()
     actions.propose(conversation, "crear_vehiculo", dict(DRAFT), "Corolla 2019", ["m1"])
 
     assert client.calls == []
@@ -39,7 +39,7 @@ async def test_proposing_does_not_write(conversation):
 
 
 async def test_confirming_creates_the_vehicle_as_a_pre_toma(session, conversation, user_id):
-    client = FakeReventa()
+    client = FakeStockar()
     actions.propose(conversation, "crear_vehiculo", dict(DRAFT), "Corolla 2019", ["m1", "m2"])
 
     message = await actions.confirm(session, conversation, client, user_id)
@@ -53,7 +53,7 @@ async def test_confirming_creates_the_vehicle_as_a_pre_toma(session, conversatio
 
 
 async def test_the_public_price_falls_back_to_the_resale_price(session, conversation, user_id):
-    client = FakeReventa()
+    client = FakeStockar()
     actions.propose(conversation, "crear_vehiculo", dict(DRAFT), "resumen", [])
 
     await actions.confirm(session, conversation, client, user_id)
@@ -62,7 +62,7 @@ async def test_the_public_price_falls_back_to_the_resale_price(session, conversa
 
 
 async def test_the_first_photo_becomes_the_cover(session, conversation, user_id):
-    client = FakeReventa()
+    client = FakeStockar()
     actions.propose(conversation, "crear_vehiculo", dict(DRAFT), "resumen", ["m1", "m2", "m3"])
 
     await actions.confirm(session, conversation, client, user_id)
@@ -72,7 +72,7 @@ async def test_the_first_photo_becomes_the_cover(session, conversation, user_id)
 
 
 async def test_an_expired_proposal_is_never_executed(session, conversation, user_id):
-    client = FakeReventa()
+    client = FakeStockar()
     actions.propose(conversation, "crear_vehiculo", dict(DRAFT), "el Corolla gris", ["m1"])
     conversation.pending_expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
 
@@ -84,8 +84,8 @@ async def test_an_expired_proposal_is_never_executed(session, conversation, user
     assert conversation.pending_action is None
 
 
-async def test_a_rejection_from_reventa_is_reported_verbatim(session, conversation, user_id):
-    client = FakeReventa(fail_with=(422, "precio inválido"))
+async def test_a_rejection_from_stockar_is_reported_verbatim(session, conversation, user_id):
+    client = FakeStockar(fail_with=(422, "precio inválido"))
     actions.propose(conversation, "crear_vehiculo", dict(DRAFT), "resumen", [])
 
     message = await actions.confirm(session, conversation, client, user_id)
@@ -95,7 +95,7 @@ async def test_a_rejection_from_reventa_is_reported_verbatim(session, conversati
 
 
 async def test_confirming_nothing_does_nothing(session, conversation, user_id):
-    client = FakeReventa()
+    client = FakeStockar()
     message = await actions.confirm(session, conversation, client, user_id)
 
     assert client.calls == []
@@ -103,7 +103,7 @@ async def test_confirming_nothing_does_nothing(session, conversation, user_id):
 
 
 async def test_every_write_is_audited(session, conversation, user_id):
-    client = FakeReventa()
+    client = FakeStockar()
     actions.propose(conversation, "crear_vehiculo", dict(DRAFT), "resumen", [])
 
     await actions.confirm(session, conversation, client, user_id)

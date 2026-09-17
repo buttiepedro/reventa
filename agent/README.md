@@ -1,8 +1,8 @@
 # Agente WhatsApp
 
-Servicio conversacional sobre WhatsApp para usuarios de Reventa. Consulta y opera
+Servicio conversacional sobre WhatsApp para usuarios de Stockar. Consulta y opera
 sobre los datos de la agencia del usuario **únicamente a través de la API pública**
-`/api/v1`: no accede a las tablas de Reventa.
+`/api/v1`: no accede a las tablas de Stockar.
 
 Spec: [`openspec/specs/agente_whatsapp/spec.md`](../openspec/specs/agente_whatsapp/spec.md)
 

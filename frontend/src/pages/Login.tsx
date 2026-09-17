@@ -58,7 +58,7 @@ export function Login() {
             <div className="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center shadow-sm shrink-0">
               <span className="text-white font-black text-sm leading-none">R</span>
             </div>
-            <span className="text-2xl font-black text-slate-900 tracking-tight">Reventa</span>
+            <span className="text-2xl font-black text-slate-900 tracking-tight">Stockar</span>
           </div>
           <p className="text-slate-500 text-sm leading-relaxed">
             La red de concesionarias de confianza.

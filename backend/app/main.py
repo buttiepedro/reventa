@@ -111,7 +111,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Reventa API",
+    title="Stockar API",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs" if settings.is_development else None,

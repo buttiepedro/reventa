@@ -12,7 +12,7 @@ export function Home() {
 
   return (
     <div>
-      <h1>Reventa</h1>
+      <h1>Stockar</h1>
       {loading && <p>Connecting to API…</p>}
       {error && <p style={{ color: "red" }}>Error: {error.detail}</p>}
       {data && (

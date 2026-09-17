@@ -4,7 +4,7 @@ Each one is a thin wrapper over an endpoint that already exists: no business log
 lives here, and no call chooses a tenant — the JWT does that.
 
 Write tools never write. They stage a proposal; `confirmar_accion_pendiente` is the
-single place where a change actually reaches Reventa.
+single place where a change actually reaches Stockar.
 """
 
 import json
@@ -16,14 +16,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation
 from app.services import actions
-from app.services.reventa import ReventaClient, ReventaError
+from app.services.stockar import StockarClient, StockarError
 
 
 @dataclass
 class ToolContext:
     """Everything a tool may touch. Nothing here is chosen by the model."""
 
-    client: ReventaClient
+    client: StockarClient
     session: AsyncSession
     conversation: Conversation
     user_id: uuid.UUID
@@ -329,7 +329,7 @@ async def execute(name: str, args: dict, ctx: ToolContext) -> tuple[str, bool]:
         if name in _STATEFUL:
             return await _STATEFUL[name](args, ctx), False
         status_code, body = await _dispatch(name, args, ctx.client)
-    except ReventaError as exc:
+    except StockarError as exc:
         return f"Error {exc.status_code}: {exc.detail}", True
     except Exception as exc:  # noqa: BLE001 — the model gets to see and recover
         logger.exception("Tool %s failed", name)
@@ -341,7 +341,7 @@ async def execute(name: str, args: dict, ctx: ToolContext) -> tuple[str, bool]:
     return json.dumps(body, ensure_ascii=False, default=str), False
 
 
-async def _dispatch(name: str, args: dict, client: ReventaClient) -> tuple[int, object]:
+async def _dispatch(name: str, args: dict, client: StockarClient) -> tuple[int, object]:
     match name:
         case "buscar_en_la_red":
             return await client.get("/vehicles", args)

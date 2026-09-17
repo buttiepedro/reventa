@@ -86,9 +86,9 @@ export function buildWhatsAppUrl(phone: string, template: WhatsAppTemplate, vars
 }
 
 const TEMPLATES = {
-  lonja_offer: "Hola! Soy {sender_name} de {sender_agency}. Vi tu búsqueda de {category} en La Lonja de Reventa. Tengo un {vehicle} en {price} que podría interesarte.",
-  pre_toma_acceptance: "Hola {receiver_name}! Te escribo por la Pre Toma del {vehicle} que publicaste en Reventa. Estoy interesado/a. ¿Podemos hablar?",
-  match_direct: "Hola! Soy {sender_name} de {sender_agency}. Reventa detectó que tengo el {vehicle} que tu cliente está buscando. ¿Lo hablamos?",
+  lonja_offer: "Hola! Soy {sender_name} de {sender_agency}. Vi tu búsqueda de {category} en La Lonja de Stockar. Tengo un {vehicle} en {price} que podría interesarte.",
+  pre_toma_acceptance: "Hola {receiver_name}! Te escribo por la Pre Toma del {vehicle} que publicaste en Stockar. Estoy interesado/a. ¿Podemos hablar?",
+  match_direct: "Hola! Soy {sender_name} de {sender_agency}. Stockar detectó que tengo el {vehicle} que tu cliente está buscando. ¿Lo hablamos?",
 }
 ```
 

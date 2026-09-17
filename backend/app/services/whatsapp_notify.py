@@ -1,7 +1,7 @@
-"""Fan a Reventa event out to the WhatsApp agent.
+"""Fan a Stockar event out to the WhatsApp agent.
 
 Push notifications are company-scoped; WhatsApp links are personal. The mapping
-from one to the other lives here, because the agent has no access to Reventa's
+from one to the other lives here, because the agent has no access to Stockar's
 users and should not.
 
 Nothing in here may break the request that triggered it: a notification that

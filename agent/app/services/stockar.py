@@ -1,4 +1,4 @@
-"""Client for the Reventa API — the agent's only door to product data."""
+"""Client for the Stockar API — the agent's only door to product data."""
 
 import logging
 import uuid
@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 _TIMEOUT = 20.0
 
 
-class ReventaError(Exception):
+class StockarError(Exception):
     def __init__(self, status_code: int, detail: str) -> None:
         super().__init__(detail)
         self.status_code = status_code
         self.detail = detail
 
 
-class ReventaClient:
+class StockarClient:
     """Acts as one user for the length of one conversation turn.
 
     The token is minted per turn and lives five minutes; the tenant comes from it,
@@ -28,7 +28,7 @@ class ReventaClient:
 
     def __init__(self, user_id: uuid.UUID) -> None:
         self.user_id = user_id
-        self._base = settings.reventa_api_url.rstrip("/")
+        self._base = settings.stockar_api_url.rstrip("/")
         self._token: str | None = None
 
     async def _ensure_token(self, client: httpx.AsyncClient) -> str:
@@ -40,7 +40,7 @@ class ReventaClient:
             json={"user_id": str(self.user_id)},
         )
         if response.status_code >= 400:
-            raise ReventaError(response.status_code, "No pude autenticarte contra Reventa")
+            raise StockarError(response.status_code, "No pude autenticarte contra Stockar")
         self._token = response.json()["access_token"]
         return self._token
 
@@ -80,5 +80,5 @@ class ReventaClient:
     async def me(self) -> dict:
         status_code, body = await self.get("/auth/me")
         if status_code >= 400 or not isinstance(body, dict):
-            raise ReventaError(status_code, "No pude leer tu perfil")
+            raise StockarError(status_code, "No pude leer tu perfil")
         return body

@@ -88,7 +88,7 @@ export function Header() {
           to={isCompanyUser ? "/inicio" : "/admin/companies"}
           className={`shrink-0 text-lg font-extrabold tracking-tight text-brand ${isCompanyUser ? "lg:hidden" : ""}`}
         >
-          Reventa
+          Stockar
         </Link>
 
         {/* Super admin nav */}

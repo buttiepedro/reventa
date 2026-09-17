@@ -206,7 +206,7 @@ class SheetSyncService:
         try:
             fields["price_resale"] = Decimal(str(fields["price_resale"]).replace(".", "").replace(",", "."))
         except InvalidOperation:
-            raise ValueError(f"precio_reventa inválido: '{fields['price_resale']}'")
+            raise ValueError(f"precio_stockar inválido: '{fields['price_resale']}'")
 
         try:
             fields["price_public"] = Decimal(str(fields["price_public"]).replace(".", "").replace(",", "."))

@@ -1,5 +1,5 @@
 ---
-title: Agente WhatsApp — servicio conversacional sobre la API de Reventa
+title: Agente WhatsApp — servicio conversacional sobre la API de Stockar
 type: feature
 status: archived
 spec: agente_whatsapp
@@ -14,10 +14,10 @@ archived_at: 2026-09-10
 Tercer servicio del monorepo (`agent/`), independiente del backend, que expone un agente
 conversacional por WhatsApp. Se conecta a una app de Meta (WhatsApp Cloud API) con un
 número único de plataforma. Cada usuario vincula **su** número personal a su cuenta de
-Reventa; cuando escribe desde ese número, el agente responde con los datos de su agencia
+Stockar; cuando escribe desde ese número, el agente responde con los datos de su agencia
 y opera en su nombre.
 
-El agente **no toca la base de datos de Reventa**. Todo lo hace vía `POST/GET /api/v1`,
+El agente **no toca la base de datos de Stockar**. Todo lo hace vía `POST/GET /api/v1`,
 con un JWT de corta vida emitido para el usuario vinculado. El aislamiento multi-tenant
 que ya existe en el backend sigue siendo el único borde de seguridad.
 
@@ -44,11 +44,11 @@ ya sabe escribir en él.
 
 | Decisión | Elección |
 |---|---|
-| Ubicación | Servicio nuevo `agent/`, habla con Reventa **solo vía API** |
+| Ubicación | Servicio nuevo `agent/`, habla con Stockar **solo vía API** |
 | Escrituras | **Confirmación explícita siempre** — nada se crea ni modifica sin un "sí" |
 | Alcance | Producto completo: vehículos, Lonja, liquidaciones, tasador, red |
 | Cola | **Redis + arq** — servicio nuevo en el compose |
-| Modelo | Claude con tool use + visión, configurable vía `AGENT_MODEL` (default `claude-opus-5`) |
+| Modelo | OpenAI con function calling + visión, configurable vía `AGENT_MODEL` (default `gpt-5.5`) |
 | Números | Un único número de plataforma (una WABA), no uno por agencia |
 
 ---
@@ -68,7 +68,7 @@ Meta Cloud API ──► POST /webhook  (agent/, FastAPI)
                       │  resolve(phone) → user_id
                       │  POST /api/v1/auth/service-token → JWT 5 min del usuario
                       ▼
-                   loop de Claude (tool use)  ◄──►  API Reventa /api/v1
+                   loop del modelo (tools)    ◄──►  API Stockar /api/v1
                       │                              (Bearer JWT del usuario)
                       ▼
                    Meta /messages ──► respuesta al usuario
@@ -84,7 +84,7 @@ Meta Cloud API ──► POST /webhook  (agent/, FastAPI)
 
 `agent` y `agent-worker` comparten imagen y comparten la DB de Postgres del backend, pero
 en un **schema propio (`agent`)**. No importan modelos de `app.models` ni consultan tablas
-de Reventa: solo las suyas.
+de Stockar: solo las suyas.
 
 ---
 
@@ -200,19 +200,19 @@ catálogo maestro, borrar nada. Eso se hace en la app.
 Usuario: [3 fotos] "Corolla XEI 2019, 80 mil km, 25 palos"
 
 1. Meta entrega media_id por foto → el worker las baja con el token de la app
-2. Claude lee fotos + texto en un solo turno multimodal
+2. El modelo lee fotos + texto en un solo turno multimodal
 3. Normaliza contra `catalogo` (Toyota / Corolla / XEI) y parsea "25 palos" → 25.000.000
 4. Devuelve el borrador, NO crea nada:
 
    Agente: Te cargo esta pre-toma:
            Toyota Corolla XEI 2019 · 80.000 km · gris
-           Reventa $25.000.000
+           Stockar $25.000.000
            3 fotos
            Me falta el precio público. ¿Te pongo el mismo? ¿Confirmo?
 
 5. Usuario: "sí, público 27"
 6. POST /vehicles (status=pre_toma) → sube las 3 fotos → primera como primary
-7. Agente: Listo. Ya está en la red → https://reventa.app/vehicles/{id}
+7. Agente: Listo. Ya está en la red → https://stockar.app/vehicles/{id}
 ```
 
 El borrador vive en `conversations.pending_action` y **caduca a los 15 minutos**: si el
@@ -229,9 +229,9 @@ de crear nada.
 - **El aviso de pre-toma le pega a toda la red.** Es el más caro por lejos: una
   publicación son N conversaciones facturadas. Conviene habilitar primero
   `oferta_aceptada` y `nueva_oferta`, que son de bajo volumen.
-- **Un número compartido.** El usuario le escribe a "Reventa", no a su agencia. Un número
+- **Un número compartido.** El usuario le escribe a "Stockar", no a su agencia. Un número
   por agencia implica multi-WABA, onboarding de Meta por cliente y otro modelo de costos.
-- **Costo por mensaje.** Conversación de Meta + tokens de Claude (las fotos pesan). Hace
+- **Costo por mensaje.** Conversación de Meta + tokens del modelo (las fotos pesan). Hace
   falta un límite por usuario/día y un corte por gasto.
 - **El modelo se equivoca leyendo fotos.** Por eso toda escritura se confirma y todo
   vehículo cargado por WhatsApp nace en `pre_toma` (reversible, con TTL propio).
@@ -250,8 +250,8 @@ de crear nada.
 | 4 | Backend | `POST /api/v1/auth/service-token` con `X-Service-Key` |
 | 5 | Backend | `POST /api/v1/whatsapp/link` y `DELETE /api/v1/whatsapp/link` (proxy al agente) |
 | 6 | Backend | Config: `AGENT_SERVICE_KEY`, `AGENT_BASE_URL` |
-| 7 | Agent | Servicio nuevo `agent/`: webhook, worker, tools, loop de Claude |
-| 8 | Agent | Config: `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_PHONE_NUMBER_ID`, `META_ACCESS_TOKEN`, `ANTHROPIC_API_KEY`, `REVENTA_API_URL`, `REDIS_URL` |
+| 7 | Agent | Servicio nuevo `agent/`: webhook, worker, tools, loop del modelo |
+| 8 | Agent | Config: `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_PHONE_NUMBER_ID`, `META_ACCESS_TOKEN`, `OPENAI_API_KEY`, `STOCKAR_API_URL`, `REDIS_URL` |
 | 9 | Frontend | Sección "Conectar WhatsApp" en Mi Agencia (código + estado + desvincular) |
 
 ---
@@ -298,8 +298,8 @@ firma y deduplicación del webhook, la máquina de confirmación, el batch de fo
 escrituras, las notificaciones y la recuperación ante caídas del worker.
 
 **Queda sin verificar** (los dos criterios sin tildar arriba): todo lo que depende de una
-llamada real al modelo. El loop nunca corrió contra la API de Claude, así que los schemas
-de las 21 tools, el `output_config` y el round-trip de bloques de contenido están sin
+llamada real al modelo. El loop nunca corrió contra la API de OpenAI, así que los schemas
+de las 21 tools, `reasoning_effort` y el round-trip de `tool_calls` están sin
 confirmar contra el servidor. Un primer mensaje real descarta las tres cosas.
 
 **Pendiente fuera del código**: registrar los tres templates en Meta con el mismo nombre y
@@ -316,7 +316,7 @@ enteros al modelo, las fotos van sin redimensionar, no hay prompt caching, la au
 
 - Un número de WhatsApp por agencia (multi-WABA)
 - Que el agente inicie conversaciones (requiere templates aprobados) — fase 4
-- Atención al cliente final: el agente habla con usuarios de Reventa, no con compradores
+- Atención al cliente final: el agente habla con usuarios de Stockar, no con compradores
 - Audios y notas de voz — solo texto e imágenes
 - Alta de empresas, usuarios, verificación de CUIT y catálogo maestro
 - Borrado de cualquier entidad

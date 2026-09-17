@@ -35,7 +35,7 @@ export function Sidebar() {
       {/* Brand */}
       <Link to="/inicio" className="flex items-center gap-2.5 px-2 pb-5">
         <span className="h-[26px] w-[26px] rounded-lg bg-brand" />
-        <span className="text-base font-bold tracking-tight text-ink">Reventa</span>
+        <span className="text-base font-bold tracking-tight text-ink">Stockar</span>
       </Link>
 
       {/* Primary nav */}

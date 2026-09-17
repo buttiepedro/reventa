@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Reventa WhatsApp Agent",
+    title="Stockar WhatsApp Agent",
     version="0.1.0",
     lifespan=lifespan,
     docs_url="/docs" if settings.is_development else None,

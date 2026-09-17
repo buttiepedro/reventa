@@ -9,7 +9,7 @@ implemented: 2026-09-10
 
 ## Purpose
 
-Permitir que un usuario de Reventa consulte y opere sobre los datos de su agencia
+Permitir que un usuario de Stockar consulte y opere sobre los datos de su agencia
 conversando por WhatsApp, sin abrir la app. El agente resuelve la identidad a partir del
 número desde el que se escribe, responde consultas sobre la red, el stock propio, La Lonja,
 liquidaciones y el tasador, y carga vehículos a partir de fotos más una descripción en
@@ -17,15 +17,15 @@ lenguaje natural.
 
 Se implementa como un servicio independiente (`agent/`) que consume la API pública
 `/api/v1` con un JWT de corta vida emitido para el usuario vinculado. No accede a las
-tablas de Reventa.
+tablas de Stockar.
 
 ## Contexto
 
 - Canal: WhatsApp Cloud API (Meta), **un único número de plataforma** para todos los tenants
-- Modelo: Claude con tool use y visión, configurable vía `AGENT_MODEL` (default `claude-opus-5`)
+- Modelo: OpenAI con function calling y visión, configurable vía `AGENT_MODEL` (default `gpt-5.5`)
 - Cola: Redis + arq — el webhook nunca procesa en el request de Meta
 - Tenant: sale del JWT del usuario vinculado; el agente nunca elige `company_id`
-- Persistencia propia: schema `agent` en el mismo Postgres, sin FK a tablas de Reventa
+- Persistencia propia: schema `agent` en el mismo Postgres, sin FK a tablas de Stockar
 
 ## Conceptos clave
 
@@ -211,7 +211,7 @@ Toda escritura ejecutada por el agente SHALL quedar auditada.
 
 ### Requirement: Notificaciones proactivas acotadas
 
-El agente SHALL poder avisar de eventos de Reventa, solo con los tres permisos dados.
+El agente SHALL poder avisar de eventos de Stockar, solo con los tres permisos dados.
 
 #### Scenario: Apagado por defecto
 

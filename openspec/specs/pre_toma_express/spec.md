@@ -10,7 +10,7 @@ created: 2026-07-29
 
 Segundo frontend completo, orientado 100% a mobile, que permite cargar una Pre-Toma desde el campo en ~30 segundos (3 fotos desde cámara + datos básicos + precio). Se despliega como PWA en un subdominio del dominio principal de la app y recibe notificaciones push vía VAPID.
 
-Este frontend es independiente del frontend principal (`reventa.app`). Comparte el mismo backend API y el mismo sistema de autenticación JWT.
+Este frontend es independiente del frontend principal (`stockar.app`). Comparte el mismo backend API y el mismo sistema de autenticación JWT.
 
 ## Conceptos clave
 

@@ -1,4 +1,4 @@
-"""Endpoints the Reventa backend calls on the user's behalf. Never public."""
+"""Endpoints the Stockar backend calls on the user's behalf. Never public."""
 
 import secrets
 import uuid

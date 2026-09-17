@@ -4,7 +4,7 @@ import pytest
 
 from app.services import actions, agent, tools
 from tests.conftest import needs_db
-from tests.fakes import FakeReventa
+from tests.fakes import FakeStockar
 
 pytestmark = needs_db
 
@@ -38,7 +38,7 @@ CASES = [
 async def ctx(session, phone, user_id):
     conversation = await agent.get_or_create_conversation(session, phone, user_id)
     return tools.ToolContext(
-        client=FakeReventa(), session=session, conversation=conversation, user_id=user_id
+        client=FakeStockar(), session=session, conversation=conversation, user_id=user_id
     )
 
 
@@ -51,7 +51,7 @@ def test_the_catalogue_matches_the_implementation():
 
 
 @pytest.mark.parametrize("tool_name,args,_expected", CASES)
-async def test_proposing_never_calls_reventa(ctx, tool_name, args, _expected):
+async def test_proposing_never_calls_stockar(ctx, tool_name, args, _expected):
     output, is_error = await tools.execute(tool_name, args, ctx)
 
     assert not is_error

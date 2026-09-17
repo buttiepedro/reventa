@@ -1,11 +1,11 @@
 """Stand-ins for the two services the agent talks to.
 
 They record calls instead of making them, so the tests are about the agent's own
-decisions rather than about Reventa or Meta.
+decisions rather than about Stockar or Meta.
 """
 
 
-class FakeReventa:
+class FakeStockar:
     def __init__(self, fail_with: tuple[int, str] | None = None) -> None:
         self.fail_with = fail_with
         self.calls: list[tuple] = []

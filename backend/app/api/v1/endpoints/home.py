@@ -93,7 +93,7 @@ def _wa_url(phone: str | None, vehicle_label: str, budget: Decimal) -> str | Non
     if not phone:
         return None
     text = (
-        f"Hola! Vi la oferta de {vehicle_label} para mi búsqueda en La Lonja de Reventa "
+        f"Hola! Vi la oferta de {vehicle_label} para mi búsqueda en La Lonja de Stockar "
         f"(presupuesto ${float(budget):,.0f}). ¿Podemos hablar?"
     )
     return f"https://wa.me/{phone.replace('+', '').replace(' ', '').replace('-', '')}?text={urllib.parse.quote(text)}"

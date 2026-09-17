@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # VAPID — Web Push Notifications
     vapid_public_key: str = ""
     vapid_private_key: str = ""
-    vapid_claim_email: str = "noreply@reventa.app"
+    vapid_claim_email: str = "noreply@stockar.app"
 
     # Agente WhatsApp — servicio externo que opera vía API
     agent_service_key: str = ""

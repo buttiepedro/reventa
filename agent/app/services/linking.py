@@ -1,4 +1,4 @@
-"""Binding a phone number to a Reventa user.
+"""Binding a phone number to a Stockar user.
 
 The code travels app -> phone: the user reads it while authenticated and sends it
 from the handset, which proves control of both sides. A code that travelled the

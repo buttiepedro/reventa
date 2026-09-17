@@ -1,4 +1,4 @@
-# Reventa
+# Stockar
 
 Full-stack application with React, FastAPI, and PostgreSQL, containerized with Docker.
 
@@ -9,7 +9,7 @@ Full-stack application with React, FastAPI, and PostgreSQL, containerized with D
 | Frontend | React 18, TypeScript, Vite        |
 | Backend  | FastAPI, SQLAlchemy (async), Alembic |
 | Database | PostgreSQL 16                     |
-| Agent    | FastAPI, arq + Redis, Claude, WhatsApp Cloud API |
+| Agent    | FastAPI, arq + Redis, OpenAI, WhatsApp Cloud API |
 | Infra    | Docker, Docker Compose            |
 
 ## Project Structure
@@ -27,7 +27,7 @@ reventa/
 │   ├── app/
 │   │   ├── api/           # Meta webhook + internal linking endpoints
 │   │   ├── models/        # Own tables, in the `agent` Postgres schema
-│   │   ├── services/      # Meta client, Reventa client, tools, Claude loop
+│   │   ├── services/      # Meta client, Stockar client, tools, model loop
 │   │   └── worker.py      # arq worker — processes every inbound message
 │   └── alembic/
 ├── backend/           # FastAPI application

@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon-192.png", "icon-512.png"],
       manifest: {
-        name: "Reventa Express",
+        name: "Stockar Express",
         short_name: "RevExpress",
         description: "Carga Pre-Tomas express desde el campo",
         theme_color: "#16a34a",

@@ -27,7 +27,7 @@ export function LoginMobile() {
     <div className="screen" style={{ justifyContent: "center", maxWidth: 420, margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 48, marginBottom: 8 }}>🚗</div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--gray-900)" }}>Reventa Express</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--gray-900)" }}>Stockar Express</h1>
         <p style={{ fontSize: 14, color: "var(--gray-500)", marginTop: 4 }}>Cargá pre-tomas desde el campo</p>
       </div>
 

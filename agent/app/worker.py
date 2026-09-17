@@ -18,13 +18,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 WELCOME_UNKNOWN = (
-    "¡Hola! Soy el asistente de Reventa. No tengo este número asociado a ninguna cuenta.\n\n"
-    "Para vincularlo, entrá a Reventa → Mi Agencia → Conectar WhatsApp y mandame acá el "
+    "¡Hola! Soy el asistente de Stockar. No tengo este número asociado a ninguna cuenta.\n\n"
+    "Para vincularlo, entrá a Stockar → Mi Agencia → Conectar WhatsApp y mandame acá el "
     "código de 6 dígitos que te da la app."
 )
 LINK_FAILED = (
     "Ese código no me sirve: puede estar vencido, ya usado o mal copiado. "
-    "Generá uno nuevo desde Reventa → Mi Agencia → Conectar WhatsApp."
+    "Generá uno nuevo desde Stockar → Mi Agencia → Conectar WhatsApp."
 )
 UNSUPPORTED_MEDIA = "Por ahora entiendo texto y fotos. Audios y documentos todavía no."
 QUOTA_REACHED = (
@@ -186,12 +186,12 @@ async def _resolve_reply(ctx: dict, session, inbound: InboundMessage) -> str:
 
 async def _welcome(user_id) -> str:
     """Name the agency back so the user can see the link landed on the right account."""
-    from app.services.reventa import ReventaClient, ReventaError
+    from app.services.stockar import StockarClient, StockarError
 
     try:
-        profile = await ReventaClient(user_id).me()
-    except ReventaError:
-        return "¡Listo! Tu número quedó vinculado a Reventa."
+        profile = await StockarClient(user_id).me()
+    except StockarError:
+        return "¡Listo! Tu número quedó vinculado a Stockar."
     company = (profile.get("company") or {}).get("name")
     who = f" de {company}" if company else ""
     return (

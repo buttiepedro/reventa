@@ -184,7 +184,7 @@ Response: TasadorResult
 
 - El scraping de portales debe respetar sus `robots.txt` y ToS
 - Rate limiting estricto: máximo 1 request por modelo cada 6 horas
-- User-Agent identificable como "Reventa-Market-Bot/1.0"
+- User-Agent identificable como "Stockar-Market-Bot/1.0"
 - Alternativa sin scraping: integración con InfoAuto API (si tienen API pública/privada)
 
 ---
