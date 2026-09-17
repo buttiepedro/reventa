@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     environment: str = "development"
 
-    # Shared Postgres instance, dedicated schema — the agent owns no Reventa table
+    # Shared Postgres instance, dedicated schema — the agent owns no Stockar table
     postgres_user: str = "reventa_user"
     postgres_password: str = "changeme"
     postgres_host: str = "db"
@@ -18,8 +18,8 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://redis:6379/0"
 
-    # Reventa API — the only way in to product data
-    reventa_api_url: str = "http://backend:8000/api/v1"
+    # Stockar API — the only way in to product data
+    stockar_api_url: str = "http://backend:8000/api/v1"
     agent_service_key: str = ""
 
     # WhatsApp Cloud API
@@ -30,10 +30,12 @@ class Settings(BaseSettings):
     meta_api_version: str = "v21.0"
     meta_display_number: str = ""
 
-    # Anthropic
-    anthropic_api_key: str = ""
-    agent_model: str = "claude-opus-5"
+    # OpenAI
+    openai_api_key: str = ""
+    agent_model: str = "gpt-5.5"
     agent_max_tokens: int = 4096
+    # Only sent when set: not every model accepts it, and an unsupported value is a 400.
+    agent_reasoning_effort: str = ""
 
     # Public app URL, used to hand back a link to what was just created
     app_public_url: str = ""

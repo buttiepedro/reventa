@@ -1,11 +1,12 @@
 """The conversation loop: one inbound turn in, one WhatsApp reply out."""
 
 import base64
+import json
 import logging
 import uuid
 from datetime import datetime, timezone
 
-from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,11 +14,11 @@ from app.core.config import settings
 from app.models.conversation import Conversation
 from app.services import actions
 from app.services import tools as tool_catalog
-from app.services.reventa import ReventaClient, ReventaError
+from app.services.stockar import StockarClient, StockarError
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Sos el asistente de Reventa, la plataforma donde las agencias de autos \
+SYSTEM_PROMPT = """Sos el asistente de Stockar, la plataforma donde las agencias de autos \
 de Argentina comparten stock entre ellas. Hablás por WhatsApp con un usuario de una agencia.
 
 Contexto del usuario:
@@ -52,7 +53,7 @@ Regla de oro sobre los cambios:
 - Antes de tocar un auto o una oferta, buscá su id con las tools de lectura. Nunca \
 inventes un id ni uses uno que el usuario no pueda reconocer: nombrá el auto por marca, \
 modelo y año cuando le pidas que confirme.
-- Solo podés operar sobre lo que es de la agencia del usuario. Si Reventa rechaza algo, \
+- Solo podés operar sobre lo que es de la agencia del usuario. Si Stockar rechaza algo, \
 contale el motivo tal cual, no lo maquilles.
 
 Lo que no podés hacer:
@@ -104,42 +105,49 @@ def over_daily_limit(conversation: Conversation) -> bool:
     return conversation.messages_today > settings.daily_message_limit
 
 
-def _persistable(content) -> object:
+def _persistable(message: dict) -> dict:
     """Strip what must not live in stored history.
 
-    Thinking blocks are only meaningful inside the turn that produced them, and
-    image payloads would bloat every later request with base64 the model already
-    described in text.
+    Image payloads would bloat every later request with base64 the model already
+    described in text, so they are replaced by a marker.
     """
+    content = message.get("content")
     if not isinstance(content, list):
-        return content
+        return message
     kept = []
-    for block in content:
-        if block.get("type") == "thinking":
-            continue
-        if block.get("type") == "image":
+    for part in content:
+        if part.get("type") == "image_url":
             kept.append({"type": "text", "text": "[foto enviada por el usuario]"})
             continue
-        kept.append(block)
-    return kept
+        kept.append(part)
+    return {**message, "content": kept}
 
 
 def _user_content(text: str, images: list[tuple[bytes, str]]) -> object:
     if not images:
         return text
-    blocks: list[dict] = [
+    parts: list[dict] = []
+    for content, mime in images:
+        media_type = mime if mime in {"image/jpeg", "image/png", "image/gif", "image/webp"} else "image/jpeg"
+        data = base64.standard_b64encode(content).decode()
+        parts.append({"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{data}"}})
+    parts.append({"type": "text", "text": text or "(sin texto)"})
+    return parts
+
+
+def _openai_tools() -> list[dict]:
+    """The catalogue is kept provider-neutral; this is the function-calling shape."""
+    return [
         {
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": mime if mime in {"image/jpeg", "image/png", "image/gif", "image/webp"} else "image/jpeg",
-                "data": base64.standard_b64encode(content).decode(),
+            "type": "function",
+            "function": {
+                "name": tool["name"],
+                "description": tool["description"],
+                "parameters": tool["input_schema"],
             },
         }
-        for content, mime in images
+        for tool in tool_catalog.TOOLS
     ]
-    blocks.append({"type": "text", "text": text or "(sin texto)"})
-    return blocks
 
 
 async def run_turn(
@@ -149,11 +157,11 @@ async def run_turn(
     user_text: str,
     images: list[tuple[bytes, str]] | None = None,
 ) -> str:
-    client = ReventaClient(user_id)
+    client = StockarClient(user_id)
     try:
         profile = await client.me()
-    except ReventaError:
-        return "No pude conectarme a Reventa en este momento. Probá de nuevo en un rato."
+    except StockarError:
+        return "No pude conectarme a Stockar en este momento. Probá de nuevo en un rato."
 
     perfil = (
         f"- Nombre: {profile.get('full_name')}\n"
@@ -165,49 +173,68 @@ async def run_turn(
     if pending:
         system += PENDING_NOTE.format(pending=pending)
 
-    messages = list(conversation.messages or [])
-    messages.append({"role": "user", "content": _user_content(user_text, images or [])})
+    # The system prompt is rebuilt every turn (it carries the pending action), so
+    # only user/assistant/tool messages are ever persisted.
+    history = list(conversation.messages or [])
+    history.append({"role": "user", "content": _user_content(user_text, images or [])})
 
     ctx = tool_catalog.ToolContext(
         client=client, session=session, conversation=conversation, user_id=user_id
     )
-    anthropic_client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+    tools = _openai_tools()
     reply = ""
 
     for _ in range(settings.max_tool_iterations):
-        response = await anthropic_client.messages.create(
-            model=settings.agent_model,
-            max_tokens=settings.agent_max_tokens,
-            system=system,
-            tools=tool_catalog.TOOLS,
-            output_config={"effort": "low"},
-            messages=messages,
-        )
+        request: dict = {
+            "model": settings.agent_model,
+            "max_completion_tokens": settings.agent_max_tokens,
+            "messages": [{"role": "system", "content": system}, *history],
+            "tools": tools,
+        }
+        if settings.agent_reasoning_effort:
+            request["reasoning_effort"] = settings.agent_reasoning_effort
 
-        if response.stop_reason == "refusal":
+        response = await openai_client.chat.completions.create(**request)
+        choice = response.choices[0]
+        message = choice.message
+
+        if getattr(message, "refusal", None):
             reply = "No puedo ayudarte con eso."
             break
 
-        content = [block.model_dump() for block in response.content]
-        messages.append({"role": "assistant", "content": content})
+        tool_calls = list(message.tool_calls or [])
+        assistant: dict = {"role": "assistant", "content": message.content or ""}
+        if tool_calls:
+            assistant["tool_calls"] = [
+                {
+                    "id": call.id,
+                    "type": "function",
+                    "function": {"name": call.function.name, "arguments": call.function.arguments},
+                }
+                for call in tool_calls
+            ]
+        history.append(assistant)
 
-        tool_uses = [block for block in content if block.get("type") == "tool_use"]
-        if not tool_uses:
-            reply = "\n".join(b["text"] for b in content if b.get("type") == "text").strip()
+        if not tool_calls:
+            reply = (message.content or "").strip()
             break
 
-        results = []
-        for block in tool_uses:
-            output, is_error = await tool_catalog.execute(block["name"], block.get("input") or {}, ctx)
-            results.append(
+        for call in tool_calls:
+            try:
+                args = json.loads(call.function.arguments or "{}")
+            except json.JSONDecodeError:
+                args, output, is_error = {}, "Argumentos inválidos: no eran JSON.", True
+            else:
+                output, is_error = await tool_catalog.execute(call.function.name, args, ctx)
+            # Function calling has no error flag: the prefix is what tells the model.
+            history.append(
                 {
-                    "type": "tool_result",
-                    "tool_use_id": block["id"],
-                    "content": output,
-                    "is_error": is_error,
+                    "role": "tool",
+                    "tool_call_id": call.id,
+                    "content": f"ERROR: {output}" if is_error else output,
                 }
             )
-        messages.append({"role": "user", "content": results})
     else:
         logger.warning("Tool loop exhausted for user %s", user_id)
         reply = "Me quedé dando vueltas con esa consulta. ¿La podés reformular más concreta?"
@@ -215,8 +242,19 @@ async def run_turn(
     if not reply:
         reply = "No pude armar una respuesta. ¿Probamos de nuevo?"
 
-    # Keep the window bounded; the tail is what the next turn actually needs.
-    stored = [{"role": m["role"], "content": _persistable(m["content"])} for m in messages]
-    conversation.messages = stored[-settings.history_turns * 2 :]
+    # Keep the window bounded, but never cut between an assistant's tool calls and
+    # their results: a dangling tool_call_id is a hard API error on the next turn.
+    stored = [_persistable(m) for m in history]
+    conversation.messages = _trim(stored, settings.history_turns * 2)
     conversation.last_message_at = _now()
     return reply
+
+
+def _trim(messages: list[dict], limit: int) -> list[dict]:
+    if len(messages) <= limit:
+        return messages
+    start = len(messages) - limit
+    # Walk forward to the first message that can open a window: a user turn.
+    while start < len(messages) and messages[start]["role"] != "user":
+        start += 1
+    return messages[start:]
