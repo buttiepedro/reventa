@@ -5,11 +5,11 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from arq import cron
-from arq.connections import RedisSettings
 from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
+from app.core.redis import redis_settings as build_redis_settings
 from app.models.conversation import Conversation
 from app.models.inbound import InboundMessage
 from app.services import agent, linking, meta
@@ -249,6 +249,6 @@ class WorkerSettings:
     functions = [process_message, flush_media]
     cron_jobs = [cron(requeue_stuck, minute=set(range(0, 60, 5)), run_at_startup=True)]
     on_startup = _wait_for_schema
-    redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    redis_settings = build_redis_settings()
     max_jobs = 10
     job_timeout = 180
