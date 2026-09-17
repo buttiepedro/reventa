@@ -63,3 +63,12 @@ como template. El agente elige solo, y deja constancia del canal en
 el más caro por mucho. Conviene arrancar habilitando solo `oferta_aceptada`.
 
 El usuario puede apagar los avisos desde Mi Agencia sin desvincular el número.
+
+## Railway
+
+El servicio escucha en `0.0.0.0`: en Railway un socket `::` resultó ser solo IPv6 y el
+edge público entra por IPv4. Por eso la red privada (IPv6) **no** llega al agente, y
+`AGENT_BASE_URL` en el backend tiene que ser el **dominio público** del agente
+(`https://…up.railway.app`), no `*.railway.internal`. Los endpoints `/internal/*`
+están protegidos por `X-Service-Key`, así que exponerlos en el dominio público no
+abre nada nuevo.

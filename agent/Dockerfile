@@ -13,7 +13,8 @@ COPY . .
 
 EXPOSE 8100
 
-# Bind on :: rather than 0.0.0.0: Railway's private network is IPv6-only, and an
-# IPv4-only socket is unreachable from the other services. Dual-stack, so plain
-# IPv4 (docker compose, local) keeps working.
-CMD ["sh", "-c", "uvicorn app.main:app --host :: --port ${PORT:-8100}"]
+# 0.0.0.0, not ::. On Railway a :: socket turned out to be IPv6-only, and the
+# public edge connects over IPv4, so the service answered 502 to everyone.
+# The cost is that Railway's IPv6 private network cannot reach this service:
+# point AGENT_BASE_URL at its public domain instead.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8100}"]
