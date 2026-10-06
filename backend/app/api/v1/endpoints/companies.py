@@ -23,7 +23,7 @@ from app.schemas.company import (
 )
 from app.schemas.user import UserCreate, UserRead
 from app.services.company import CompanyService
-from app.services.user import UserService
+from app.services.user import UserService, assert_can_assign
 
 router = APIRouter()
 
@@ -100,6 +100,7 @@ async def create_company_user(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     if current_user.role == Role.COMPANY_ADMIN and current_user.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    assert_can_assign(current_user, data.role)
     await CompanyService(session).get_or_404(company_id)
     return await UserService(session).create_in_company(company_id, data)
 

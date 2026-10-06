@@ -4,11 +4,13 @@ from collections.abc import AsyncGenerator
 
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.models.company import Company
 from app.models.user import Role, User
 from app.repositories.user import UserRepository
 
@@ -32,7 +34,26 @@ async def get_current_user(
     user = await UserRepository(session).get_by_id(user_id)
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    await assert_company_active(session, user)
     return user
+
+
+async def assert_company_active(session: AsyncSession, user: User) -> None:
+    """Pausar una agencia deja afuera a toda su gente, no solo a los nuevos.
+
+    Se chequea en cada request y no solo en el login: si no, un token emitido
+    antes de la pausa seguiría sirviendo hasta vencer.
+    """
+    if not user.company_id:
+        return
+    active = await session.scalar(
+        select(Company.is_active).where(Company.id == user.company_id)
+    )
+    if active is False:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu agencia está pausada. Escribinos para reactivarla.",
+        )
 
 
 async def require_super_admin(current_user: User = Depends(get_current_user)) -> User:

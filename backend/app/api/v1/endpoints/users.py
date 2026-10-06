@@ -85,13 +85,13 @@ async def update_user(
         pass
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return await UserService(session).update(user_id, data)
+    return await UserService(session).update(user_id, data, actor=current_user)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    await UserService(session).delete(user_id)
+    await UserService(session).delete(user_id, actor=current_user)
