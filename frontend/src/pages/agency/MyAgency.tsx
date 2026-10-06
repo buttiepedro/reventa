@@ -4,20 +4,23 @@ import { toast } from "sonner";
 import { companyService, type CompanyProfileUpdate, type RadarEntryCreate } from "@/services/companyService";
 import { favoriteService, type FavoriteRequest } from "@/services/favoriteService";
 import { whatsappService, type LinkCode, type LinkStatus } from "@/services/whatsappService";
+import { userService, type UserCreate } from "@/services/userService";
 import { api } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import { ReputationBadge } from "@/components/ReputationBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import { Input } from "@/components/ui/Input";
-import type { Company, CompanyProfile, RadarEntry } from "@/types";
+import type { Company, CompanyProfile, RadarEntry, User } from "@/types";
 
-type Tab = "perfil" | "conexiones" | "radar" | "reputacion";
+type Tab = "perfil" | "usuarios" | "conexiones" | "radar" | "reputacion";
 
 // ─── Tab Toggle ──────────────────────────────────────────────
 
-function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+function TabToggle({ active, onChange, showUsers }: { active: Tab; onChange: (t: Tab) => void; showUsers: boolean }) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "perfil", label: "Perfil" },
+    // Sólo el admin de la agencia administra su equipo.
+    ...(showUsers ? [{ id: "usuarios" as Tab, label: "Usuarios" }] : []),
     { id: "conexiones", label: "Conexiones" },
     { id: "radar", label: "Radar" },
     { id: "reputacion", label: "Reputación" },
@@ -769,16 +772,135 @@ function ReputacionTab() {
   );
 }
 
+
+// ─── Usuarios Tab ────────────────────────────────────────────
+
+const BLANK_USER: UserCreate = { email: "", password: "", full_name: "", role: "company_user" };
+
+function UsuariosTab({ companyId, myId }: { companyId: string; myId: string }) {
+  const [users, setUsers] = useState<User[] | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<UserCreate>(BLANK_USER);
+  const [saving, setSaving] = useState(false);
+
+  const reload = () =>
+    userService.listByCompany(companyId).then(setUsers).catch(() => toast.error("No se pudieron cargar los usuarios."));
+
+  useEffect(() => { reload(); }, [companyId]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await userService.createInCompany(companyId, form);
+      toast.success("Usuario creado.");
+      setForm(BLANK_USER);
+      setShowForm(false);
+      reload();
+    } catch (err: unknown) {
+      toast.error((err as { detail?: string }).detail ?? "No se pudo crear el usuario.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggle = async (u: User) => {
+    try {
+      await userService.setActive(u.id, !u.is_active);
+      reload();
+    } catch (err: unknown) {
+      toast.error((err as { detail?: string }).detail ?? "No se pudo cambiar el estado.");
+    }
+  };
+
+  if (users === null) return <div className="flex justify-center py-16"><Spinner /></div>;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-ink">Usuarios ({users.length})</h2>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="rounded-[10px] bg-brand px-3.5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-brand-strong"
+        >
+          {showForm ? "Cancelar" : "Nuevo usuario"}
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleCreate} className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+          <Input label="Nombre completo *" required value={form.full_name}
+                 onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} />
+          <Input label="Email *" type="email" required value={form.email}
+                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+          <Input label="Contraseña *" type="password" required minLength={8} value={form.password}
+                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
+          <div className="flex flex-col gap-1">
+            <label className="text-[13px] font-semibold text-muted">Rol</label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as UserCreate["role"] }))}
+              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
+            >
+              <option value="company_user">Vendedor — carga y consulta stock</option>
+              <option value="company_admin">Administrador — además gestiona el equipo</option>
+            </select>
+          </div>
+          <button type="submit" disabled={saving}
+                  className="rounded-[10px] bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-50">
+            {saving ? "Creando..." : "Crear usuario"}
+          </button>
+        </form>
+      )}
+
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+        {users.map((u) => (
+          <div key={u.id} className="flex items-center justify-between gap-3 border-b border-line-soft px-4 py-3 last:border-0">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-ink">
+                {u.full_name}
+                {u.id === myId && <span className="ml-1.5 text-[11px] font-medium text-faint">(vos)</span>}
+              </p>
+              <p className="truncate text-[12px] text-faint">{u.email}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-[11px] font-medium text-muted">
+                {u.role === "company_admin" ? "Admin" : "Vendedor"}
+              </span>
+              {/* Desactivarse a uno mismo deja la agencia sin quien la administre. */}
+              {u.id !== myId && (
+                <button
+                  onClick={() => handleToggle(u)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    u.is_active ? "bg-mint text-mint-ink hover:bg-mint-border" : "bg-tab text-faint hover:bg-line"
+                  }`}
+                >
+                  {u.is_active ? "Activo" : "Inactivo"}
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ────────────────────────────────────────────────────
 
 export function MyAgency() {
   const [tab, setTab] = useState<Tab>("perfil");
+  const { user } = useAuth();
+  const canManageUsers = user?.role === "company_admin" && !!user.company_id;
 
   return (
     <div className="space-y-4">
       <AgencyHero />
-      <TabToggle active={tab} onChange={setTab} />
+      <TabToggle active={tab} onChange={setTab} showUsers={canManageUsers} />
       {tab === "perfil" && <ProfileTab />}
+      {tab === "usuarios" && canManageUsers && (
+        <UsuariosTab companyId={user!.company_id!} myId={user!.id} />
+      )}
       {tab === "conexiones" && <ConexionesTab />}
       {tab === "radar" && <RadarTab />}
       {tab === "reputacion" && <ReputacionTab />}
