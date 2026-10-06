@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     # Seconds of quiet before a batch of photos is treated as complete
     media_debounce_seconds: int = 8
     max_media_per_draft: int = 10
+    max_photos_per_send: int = 5
     pending_action_ttl_minutes: int = 15
     # A message still "processing" after this long had its worker die under it
     stuck_message_seconds: int = 600

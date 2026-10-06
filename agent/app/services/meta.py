@@ -111,6 +111,30 @@ class MetaClient:
             return False, response.text[:500]
         return True, ""
 
+    async def send_image(self, to_e164: str, link: str, caption: str | None = None) -> tuple[bool, str]:
+        """Send a photo as a real image message.
+
+        Meta fetches the URL itself and re-hosts the bytes, so the recipient gets a
+        picture in the chat instead of a link. The presigned S3 URL only has to
+        survive that fetch, which happens within seconds.
+        """
+        if not settings.meta_access_token or not settings.meta_phone_number_id:
+            return False, "Meta credentials missing"
+        image: dict = {"link": link}
+        if caption:
+            image["caption"] = caption[:1024]
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            response = await client.post(
+                f"{self._base}/{settings.meta_phone_number_id}/messages",
+                headers=self._headers,
+                json={"messaging_product": "whatsapp", "to": to_e164.lstrip("+"),
+                      "type": "image", "image": image},
+            )
+        if response.status_code >= 400:
+            logger.error("Meta image send failed (%s): %s", response.status_code, response.text)
+            return False, response.text[:300]
+        return True, ""
+
     async def send_text(self, to_e164: str, body: str) -> None:
         """Reply inside the 24h window. Outside it Meta rejects free-form text."""
         if not settings.meta_access_token or not settings.meta_phone_number_id:

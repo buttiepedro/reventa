@@ -14,8 +14,10 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.conversation import Conversation
 from app.services import actions
+from app.services.meta import MetaClient
 from app.services.stockar import StockarClient, StockarError
 
 
@@ -137,6 +139,25 @@ TOOLS: list[dict] = [
         "name": "catalogo_marcas",
         "description": "Marcas del catálogo maestro. Usala para normalizar lo que escribió el usuario.",
         "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "enviar_fotos",
+        "description": (
+            "Manda por WhatsApp las fotos de un vehículo, como imágenes de verdad. "
+            "Usala cuando el usuario quiera ver un auto puntual o te pida fotos. "
+            "Nunca pegues links de fotos en el texto: no los tenés y no sirven."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "vehicle_id": {"type": "string"},
+                "caption": {
+                    "type": "string",
+                    "description": "Texto corto que acompaña la primera foto, ej. 'Corolla XEI 2019 · $25.000.000'",
+                },
+            },
+            "required": ["vehicle_id"],
+        },
     },
     {
         "name": "proponer_carga_vehiculo",
@@ -338,7 +359,29 @@ async def execute(name: str, args: dict, ctx: ToolContext) -> tuple[str, bool]:
     if status_code >= 400:
         detail = body.get("detail") if isinstance(body, dict) else body
         return f"Error {status_code}: {detail}", True
-    return json.dumps(body, ensure_ascii=False, default=str), False
+    return json.dumps(_without_media_urls(body), ensure_ascii=False, default=str), False
+
+
+def _without_media_urls(node):
+    """Replace image URLs with a count.
+
+    The API hands back presigned S3 links. Handing those to the model guarantees it
+    pastes one into the chat sooner or later; the photos travel through
+    `enviar_fotos` instead, as real image messages.
+    """
+    if isinstance(node, list):
+        return [_without_media_urls(item) for item in node]
+    if not isinstance(node, dict):
+        return node
+    out = {}
+    for key, value in node.items():
+        if key == "images" and isinstance(value, list):
+            out["fotos"] = len(value)
+        elif key == "primary_image_url":
+            out["fotos"] = 1 if value else 0
+        else:
+            out[key] = _without_media_urls(value)
+    return out
 
 
 async def _dispatch(name: str, args: dict, client: StockarClient) -> tuple[int, object]:
@@ -377,6 +420,33 @@ async def _dispatch(name: str, args: dict, client: StockarClient) -> tuple[int, 
 
 
 # ─── Tools that touch conversation state instead of the API ──
+
+
+async def _enviar_fotos(args: dict, ctx: ToolContext) -> str:
+    status_code, body = await ctx.client.get(f"/vehicles/{args['vehicle_id']}")
+    if status_code >= 400 or not isinstance(body, dict):
+        detail = body.get("detail") if isinstance(body, dict) else body
+        return f"No pude traer ese vehículo ({status_code}): {detail}"
+
+    images = sorted(body.get("images") or [], key=lambda i: (not i.get("is_primary"), i.get("display_order", 0)))
+    urls = [i["url"] for i in images if i.get("url")][: settings.max_photos_per_send]
+    if not urls:
+        return "Ese vehículo no tiene fotos cargadas. Decíselo al usuario."
+
+    label = f"{body.get('brand','')} {body.get('model','')} {body.get('year','')}".strip()
+    caption = args.get("caption") or label
+    client = MetaClient()
+    sent = 0
+    for index, url in enumerate(urls):
+        ok, _ = await client.send_image(ctx.conversation.phone_e164, url, caption if index == 0 else None)
+        sent += 1 if ok else 0
+
+    if not sent:
+        return "No pude enviar las fotos. Avisale al usuario que las vea en la app."
+    return (
+        f"Ya le mandé {sent} foto(s) del {label} por WhatsApp; el usuario las está viendo. "
+        "No las describas ni pegues links: respondé solo lo que falte decir."
+    )
 
 
 async def _proponer_carga_vehiculo(args: dict, ctx: ToolContext) -> str:
@@ -426,6 +496,7 @@ def _proposer(action_type: str, fields: tuple[str, ...]):
 
 
 _STATEFUL = {
+    "enviar_fotos": _enviar_fotos,
     "proponer_carga_vehiculo": _proponer_carga_vehiculo,
     "proponer_cambio_estado": _proposer("cambiar_estado", ("vehicle_id", "status")),
     "proponer_cambio_precio": _proposer("cambiar_precio", ("vehicle_id", "price_resale", "price_public")),
