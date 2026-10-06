@@ -101,8 +101,8 @@ export function DashboardMobile() {
                   fontWeight: 600,
                   padding: "3px 8px",
                   borderRadius: 99,
-                  background: item.status === "pre_toma" ? "#fef3c7" : "#dcfce7",
-                  color: item.status === "pre_toma" ? "#92400e" : "#166534",
+                  background: item.status === "pre_toma" ? "#fef3c7" : "#eef5f1",
+                  color: item.status === "pre_toma" ? "#92400e" : "#3f6b53",
                 }}>
                   {STATUS_LABEL[item.status] ?? item.status}
                 </span>

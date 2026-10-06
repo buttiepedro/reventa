@@ -17,9 +17,9 @@ export function BottomNav() {
           >
             {({ isActive }) => (
               <>
-                {tab.icon(`h-[18px] w-[18px] ${isActive ? "text-brand" : "text-faint"}`)}
+                {tab.icon(`h-[18px] w-[18px] ${isActive ? "text-nav-strong" : "text-faint"}`)}
                 <span
-                  className={`text-[10px] font-medium leading-none ${isActive ? "text-brand" : "text-faint"}`}
+                  className={`text-[10px] font-medium leading-none ${isActive ? "text-nav-strong" : "text-faint"}`}
                 >
                   {tab.label}
                 </span>

@@ -27,7 +27,7 @@ export function Sidebar() {
 
   const itemClass = (active: boolean) =>
     `flex items-center gap-3 h-[38px] px-2.5 rounded-[9px] transition-colors ${
-      active ? "bg-mint text-brand font-semibold" : "text-muted font-medium hover:bg-canvas"
+      active ? "bg-nav-bg text-nav-strong font-semibold" : "text-muted font-medium hover:bg-canvas"
     }`;
 
   return (
@@ -48,7 +48,7 @@ export function Sidebar() {
                 <span className="text-[13.5px]">{t.label}</span>
                 {counts[t.to] > 0 && (
                   <span
-                    className={`ml-auto font-mono text-[11px] font-bold ${isActive ? "text-brand" : "text-faint"}`}
+                    className={`ml-auto font-mono text-[11px] font-bold ${isActive ? "text-nav-strong" : "text-faint"}`}
                   >
                     {counts[t.to]}
                   </span>
@@ -71,7 +71,7 @@ export function Sidebar() {
                 to={t.to}
                 className={({ isActive }) =>
                   `flex items-center gap-3 h-[34px] px-2.5 rounded-[9px] text-[13px] font-medium transition-colors ${
-                    isActive ? "bg-mint text-brand" : "text-faint hover:bg-canvas"
+                    isActive ? "bg-nav-bg text-nav-strong" : "text-faint hover:bg-canvas"
                   }`
                 }
               >

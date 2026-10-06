@@ -1,10 +1,16 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   Stockar — design system (rediseño)
-   Superficie blanca sobre lienzo gris cálido. Profundidad por borde de 1px,
-   no por blur. Un solo verde de marca. Números en mono tabular.
-   Neutros corregidos a AA. Public Sans (UI) + JetBrains Mono (cifras).
+   Stockar — design system
+   Paleta: gris perla #F8F9FA (lienzo) · azul pizarra #475569 (navegación e
+   iconos) · gris plomo #334155 (textos) · verde salvia #6BA786 (acentos,
+   oportunidades, estados positivos).
+
+   El salvia tal cual da 2.8:1 con texto blanco encima, así que vive en
+   --color-brand-lo para rellenos sin texto (puntos, acentos, gradientes), y
+   --color-brand es el mismo tono 30% más oscuro (#48785d), que llega a 4.6:1
+   o más sobre blanco, perla y mint. Superficie blanca sobre lienzo perla,
+   profundidad por borde de 1px y no por blur, números en mono tabular.
    ========================================================================== */
 @theme {
   /* Typography */
@@ -17,65 +23,69 @@
   --radius-2xl: 18px;
 
   /* Semantic tokens (used by shell + refined components) */
-  --color-brand: #16803c; /* text / border / fill+white — 5.0:1 */
-  --color-brand-strong: #0f5c2b; /* hover */
-  --color-brand-lo: #1fa34f; /* fills sin texto: dots, gradiente, acento */
-  --color-mint: #edf7f1; /* superficie éxito */
-  --color-mint-border: #c8e4d3;
-  --color-mint-ink: #3d6b4e;
+  --color-brand: #48785d; /* salvia oscuro — texto y relleno con etiqueta blanca, 5.1:1 */
+  --color-brand-strong: #3b644d; /* hover */
+  --color-brand-lo: #6ba786; /* salvia de marca — rellenos SIN texto encima */
+  --color-nav: #475569; /* azul pizarra — navegación, iconos, elementos principales */
+  --color-nav-strong: #334155; /* nav activa / hover */
+  --color-nav-bg: #eef1f5; /* fondo de item de nav activo */
+  --color-mint: #eef5f1; /* superficie éxito */
+  --color-mint-border: #cfe3d8;
+  --color-mint-ink: #3f6b53;
   --color-warn: #8a5208; /* sobre #FBF0DF — 5.7:1 */
   --color-warn-bg: #fbf0df;
   --color-danger: #b42318;
   --color-danger-bg: #fdecea;
-  --color-ink: #0f1512; /* texto principal */
-  --color-ink-soft: #3d4642;
-  --color-muted: #5a6560;
-  --color-faint: #656f6a; /* AA en blanco y en #F8F9F7 */
-  --color-canvas: #f4f5f3;
+  --color-ink: #334155; /* gris plomo — texto principal, 9.8:1 sobre perla */
+  --color-ink-soft: #475569;
+  --color-muted: #475569; /* azul pizarra — 7.2:1 */
+  --color-faint: #64748b; /* el más claro que sigue siendo AA, 4.5:1 sobre perla */
+  --color-canvas: #f8f9fa; /* gris perla — fondo principal */
   --color-surface: #ffffff;
-  --color-fill: #f8f9f7; /* relleno de campo */
-  --color-fill-alt: #fafbf9; /* fila alterna */
-  --color-line: #e3e6e2; /* borde de tarjeta */
-  --color-line-soft: #eef0ed; /* divisor */
-  --color-tab: #f1f3f0; /* fondo de segmented / pill inactiva */
+  --color-fill: #f1f5f9; /* relleno de campo */
+  --color-fill-alt: #f8fafc; /* fila alterna */
+  --color-line: #e2e8f0; /* borde de tarjeta */
+  --color-line-soft: #eef1f4; /* divisor */
+  --color-tab: #f1f5f9; /* fondo de segmented / pill inactiva */
 
   /* --- Remap the default Tailwind ramps so existing classes adopt the palette --- */
 
-  /* Green → brand greens */
-  --color-green-50: #edf7f1;
-  --color-green-100: #dcefe4;
-  --color-green-200: #c8e4d3;
-  --color-green-300: #9bd3b1;
-  --color-green-400: #4fb477;
-  --color-green-500: #16803c;
-  --color-green-600: #16803c;
-  --color-green-700: #0f5c2b;
-  --color-green-800: #14532a;
-  --color-green-900: #0f3d20;
+  /* Green → salvia */
+  --color-green-50: #eef5f1;
+  --color-green-100: #dcebe3;
+  --color-green-200: #cfe3d8;
+  --color-green-300: #a4c0b1;
+  --color-green-400: #6ba786;
+  --color-green-500: #48785d;
+  --color-green-600: #48785d;
+  --color-green-700: #3b644d;
+  --color-green-800: #335643;
+  --color-green-900: #294535;
 
-  /* Warm neutral — replaces gray */
-  --color-gray-50: #f7f8f6;
-  --color-gray-100: #edefec;
-  --color-gray-200: #e3e6e2;
-  --color-gray-300: #d0d5cf;
-  --color-gray-400: #656f6a;
-  --color-gray-500: #5a6560;
-  --color-gray-600: #4a544f;
-  --color-gray-700: #3d4642;
-  --color-gray-800: #232d28;
-  --color-gray-900: #0f1512;
+  /* Neutro frío — reemplaza gray. 400 y 500 quedan oscuros a propósito:
+     el código los usa para etiquetas chicas y el slate-400 real da 2.4:1. */
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #64748b;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
 
-  /* Warm neutral — replaces slate */
-  --color-slate-50: #f4f5f3;
-  --color-slate-100: #edefec;
-  --color-slate-200: #e3e6e2;
-  --color-slate-300: #d0d5cf;
-  --color-slate-400: #656f6a;
-  --color-slate-500: #5a6560;
-  --color-slate-600: #4a544f;
-  --color-slate-700: #3d4642;
-  --color-slate-800: #232d28;
-  --color-slate-900: #0f1512;
+  /* Neutro frío — reemplaza slate */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #64748b;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
 
   /* Danger → #B42318 */
   --color-red-50: #fdecea;
@@ -101,10 +111,10 @@
   --color-yellow-800: #8a5208;
 
   /* Depth from border, not blur — flatten default shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(15 21 18 / 0.05);
-  --shadow-md: 0 2px 6px -1px rgb(15 21 18 / 0.07);
-  --shadow-lg: 0 10px 24px -6px rgb(15 21 18 / 0.1);
-  --shadow-xl: 0 18px 40px -8px rgb(15 21 18 / 0.12);
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --shadow-md: 0 2px 6px -1px rgb(15 23 42 / 0.07);
+  --shadow-lg: 0 10px 24px -6px rgb(15 23 42 / 0.1);
+  --shadow-xl: 0 18px 40px -8px rgb(15 23 42 / 0.12);
 }
 
 :root {
@@ -159,7 +169,7 @@
   }
   /* Trama diagonal para placeholders de foto */
   .photo-hatch {
-    background: repeating-linear-gradient(135deg, #eaece9 0 6px, #f4f5f3 6px 12px);
+    background: repeating-linear-gradient(135deg, #e8ecf1 0 6px, #f4f6f9 6px 12px);
   }
 }
 
@@ -193,7 +203,7 @@
 @media (hover: hover) and (pointer: fine) {
   .vehicle-card-hover:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(15, 21, 18, 0.08);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
   }
 }
 

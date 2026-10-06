@@ -69,7 +69,7 @@ export function Header() {
 
   const adminNavClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors pb-0.5 border-b-2 ${
-      isActive ? "text-brand border-brand" : "text-muted border-transparent hover:text-ink"
+      isActive ? "text-nav-strong border-nav" : "text-muted border-transparent hover:text-ink"
     }`;
 
   const timeAgo = (dateStr: string) => {

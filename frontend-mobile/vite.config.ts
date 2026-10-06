@@ -12,7 +12,7 @@ export default defineConfig({
         name: "Stockar Express",
         short_name: "Stockar",
         description: "Carga Pre-Tomas express desde el campo",
-        theme_color: "#16a34a",
+        theme_color: "#475569",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",

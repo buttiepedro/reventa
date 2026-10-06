@@ -1,16 +1,21 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --green: #16a34a;
-  --green-dark: #15803d;
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-700: #374151;
-  --gray-900: #111827;
-  --red: #dc2626;
+  /* Misma paleta que el frontend principal: perla · pizarra · plomo · salvia.
+     --green es el salvia oscuro: el #6BA786 de marca con texto blanco encima
+     da 2.8:1, así que vive en --sage para acentos sin texto. */
+  --green: #48785d;
+  --green-dark: #3b644d;
+  --sage: #6ba786;
+  --gray-50: #f8f9fa;
+  --gray-100: #f1f5f9;
+  --gray-300: #cbd5e1;
+  --gray-400: #64748b;
+  --gray-500: #64748b;
+  --gray-700: #334155;
+  --gray-900: #0f172a;
+  --nav: #475569;
+  --red: #b42318;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }

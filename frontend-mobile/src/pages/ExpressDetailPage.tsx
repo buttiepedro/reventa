@@ -17,7 +17,7 @@ interface VehicleDetail {
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   pre_toma: { label: "Pre-Toma pendiente", color: "#92400e", bg: "#fef3c7" },
-  available: { label: "Publicado en red", color: "#166534", bg: "#dcfce7" },
+  available: { label: "Publicado en red", color: "#3f6b53", bg: "#eef5f1" },
   sold: { label: "Vendido", color: "#1e3a5f", bg: "#dbeafe" },
 };
 

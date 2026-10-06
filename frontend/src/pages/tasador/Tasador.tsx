@@ -78,7 +78,7 @@ function Thermometer({
 
       {/* Gradient bar: demanda alta → sobreoferta */}
       <div className="px-1">
-        <div className="relative h-2.5 rounded-full" style={{ background: "linear-gradient(90deg,#1FA34F 0%,#8FC93A 32%,#E8B62C 62%,#D9663A 82%,#B42318 100%)" }}>
+        <div className="relative h-2.5 rounded-full" style={{ background: "linear-gradient(90deg,#6BA786 0%,#8FC93A 32%,#E8B62C 62%,#D9663A 82%,#B42318 100%)" }}>
           {/* Suggested price marker */}
           <div
             className="absolute -top-[3px] h-[16px] w-[3px] -translate-x-1/2 rounded-sm bg-ink"
@@ -315,13 +315,13 @@ export function Tasador() {
               {/* Precio máximo de toma — dark card */}
               {result.suggested_price != null && (
                 <div className="rounded-2xl bg-ink p-5">
-                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "#7FCB9C" }}>
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "#A4C0B1" }}>
                     Precio máximo de toma sugerido
                   </p>
                   <p className="mt-2 font-mono text-[32px] font-bold leading-none tracking-tight text-white">
                     ${Math.max(0, result.suggested_price - totalDeduccion).toLocaleString()}
                   </p>
-                  <p className="mt-2.5 text-[12px] leading-relaxed" style={{ color: "#A5AEA9" }}>
+                  <p className="mt-2.5 text-[12px] leading-relaxed" style={{ color: "#CBD5E1" }}>
                     {totalDeduccion > 0
                       ? `Calculado restando $${totalDeduccion.toLocaleString()} en deducciones del precio sugerido de la red.`
                       : "Basado en la media recortada de operaciones comparables de la red."}
