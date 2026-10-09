@@ -25,9 +25,16 @@ def get_sync_status() -> SyncStatus:
     return _last_status
 
 
+class CarApiNotConfigured(Exception):
+    """Sin credenciales no hay modelos ni motorizaciones: sólo marcas."""
+
+
 async def _get_jwt(client: httpx.AsyncClient) -> str | None:
     if not settings.carapi_username or not settings.carapi_api_token:
-        return None
+        raise CarApiNotConfigured(
+            "Faltan CARAPI_USERNAME y CARAPI_API_TOKEN. Sin ellas carapi.app sólo "
+            "devuelve marcas: modelos y motorizaciones requieren autenticación."
+        )
     resp = await client.post(
         f"{CARAPI_BASE}/auth/login",
         json={"username": settings.carapi_username, "api_token": settings.carapi_api_token},
@@ -43,8 +50,13 @@ async def _fetch_all(client: httpx.AsyncClient, url: str, headers: dict) -> list
     while True:
         sep = "&" if "?" in url else "?"
         resp = await client.get(f"{url}{sep}limit=1000&page={page}", headers=headers)
-        if resp.status_code == 403:
-            break  # auth required but not provided
+        if resp.status_code in (401, 403):
+            # Antes esto se tragaba el error y devolvía una lista vacía: el sync
+            # terminaba "bien" con cero resultados y nada decía por qué.
+            raise PermissionError(
+                f"carapi rechazó {url} con HTTP {resp.status_code}: credenciales "
+                "inválidas o plan sin acceso a ese recurso."
+            )
         resp.raise_for_status()
         body = resp.json()
         data = body.get("data", [])
@@ -154,6 +166,13 @@ async def run_sync() -> None:
                         if m.carapi_id is not None:
                             make_by_carapi[m.carapi_id] = m
 
+            if not make_by_carapi:
+                errors.append(
+                    "Ninguna marca quedó vinculada a carapi (carapi_id nulo), así que no "
+                    "se pueden pedir modelos. Las marcas cargadas a mano no sirven de "
+                    "ancla: el sync de marcas tiene que correr primero y con éxito."
+                )
+
             # Step 2: Sync models (requires auth)
             if jwt and make_by_carapi:
                 model_by_carapi: dict[int, VehicleModel] = {}
@@ -205,6 +224,12 @@ async def run_sync() -> None:
                     except Exception as exc:
                         errors.append(f"Fetching trims for model {model.name}: {exc}")
 
+    except CarApiNotConfigured as exc:
+        logger.warning("carapi sync skipped: %s", exc)
+        errors.append(str(exc))
+    except PermissionError as exc:
+        logger.error("carapi sync unauthorized: %s", exc)
+        errors.append(str(exc))
     except Exception as exc:
         logger.exception("carapi sync failed")
         errors.append(f"Sync error: {exc}")
