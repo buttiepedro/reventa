@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user, get_session, require_super_admin
 from app.models.user import User
 from app.schemas.catalog import MakeRead, MakeWrite, ModelRead, ModelWrite, SyncStatus, TrimRead, TrimWrite
-from app.services import carapi_sync
+from app.services import meli_sync
 from app.services.catalog import CatalogService
 
 router = APIRouter()
@@ -135,10 +135,10 @@ async def delete_trim(
 
 @router.post("/sync", status_code=status.HTTP_202_ACCEPTED)
 async def trigger_sync(_: User = Depends(require_super_admin)):
-    asyncio.create_task(carapi_sync.run_sync())
+    asyncio.create_task(meli_sync.run_sync())
     return {"detail": "Sincronización iniciada en segundo plano."}
 
 
 @router.get("/sync/status", response_model=SyncStatus)
 async def sync_status(_: User = Depends(require_super_admin)):
-    return carapi_sync.get_sync_status()
+    return meli_sync.get_sync_status()

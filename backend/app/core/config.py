@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     s3_bucket: str = "reventa-vehicles"
     s3_endpoint_url: str | None = None
 
-    # carapi.app — optional, for vehicle catalog sync
-    carapi_username: str = ""
-    carapi_api_token: str = ""
+    # Mercado Libre — catálogo de marcas de vehículos
+    meli_client_id: str = ""
+    meli_client_secret: str = ""
 
     # VAPID — Web Push Notifications
     vapid_public_key: str = ""
