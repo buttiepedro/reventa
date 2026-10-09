@@ -34,6 +34,28 @@ class CompanyRead(BaseModel):
     created_at: datetime
 
 
+class CompanyAdminRead(BaseModel):
+    """Lo que ve el super admin. Aparte de CompanyRead a propósito: el CUIT es
+    dato fiscal de cada agencia y GET /companies lo lee cualquier usuario."""
+
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    name: str
+    slug: str
+    is_active: bool
+    cuit: str | None
+    cuit_verified: bool
+    cuit_submitted_at: datetime | None
+    cuit_reviewed_at: datetime | None
+    cuit_review_notes: str | None
+    created_at: datetime
+
+    @property
+    def cuit_pending(self) -> bool:
+        return bool(self.cuit) and not self.cuit_verified
+
+
 class CompanyProfile(BaseModel):
     model_config = {"from_attributes": True}
 

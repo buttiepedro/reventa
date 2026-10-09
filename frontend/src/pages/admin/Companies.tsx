@@ -7,24 +7,30 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import type { ApiError, Company } from "@/types";
+import { companyService } from "@/services/companyService";
+import type { ApiError, CompanyAdmin } from "@/types";
 
 export function Companies() {
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<CompanyAdmin[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Edit modal
-  const [editTarget, setEditTarget] = useState<Company | null>(null);
+  const [editTarget, setEditTarget] = useState<CompanyAdmin | null>(null);
+
+  // Revisión de CUIT
+  const [rejectTarget, setRejectTarget] = useState<CompanyAdmin | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [reviewing, setReviewing] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editActive, setEditActive] = useState(true);
   const [editSaving, setEditSaving] = useState(false);
 
   const loadCompanies = useCallback(async () => {
     try {
-      const data = await api.get<Company[]>("/companies");
+      const data = await companyService.adminList();
       setCompanies(data);
     } catch (err) {
       setError(`Error al cargar las empresas: ${(err as ApiError).detail ?? "desconocido"}`);
@@ -50,7 +56,22 @@ export function Companies() {
     }
   }
 
-  function openEdit(c: Company) {
+  async function review(c: CompanyAdmin, approved: boolean, reason?: string) {
+    setReviewing(c.id);
+    try {
+      await companyService.verifyCuit(c.id, approved, reason);
+      toast.success(approved ? `CUIT de ${c.name} verificado.` : `CUIT de ${c.name} rechazado.`);
+      setRejectTarget(null);
+      setRejectReason("");
+      await loadCompanies();
+    } catch (err) {
+      toast.error((err as ApiError).detail ?? "No se pudo registrar la revisión.");
+    } finally {
+      setReviewing(null);
+    }
+  }
+
+  function openEdit(c: CompanyAdmin) {
     setEditTarget(c);
     setEditName(c.name);
     setEditActive(c.is_active);
@@ -72,7 +93,7 @@ export function Companies() {
     }
   }
 
-  async function handleDelete(c: Company) {
+  async function handleDelete(c: CompanyAdmin) {
     if (!window.confirm(`¿Eliminar la empresa "${c.name}"? Esta acción no se puede deshacer.`)) return;
     try {
       await api.delete(`/companies/${c.id}`);
@@ -110,6 +131,7 @@ export function Companies() {
               <th className="text-left px-4 py-3 font-medium text-gray-600">Nombre</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Slug</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Estado</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">CUIT</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -124,6 +146,31 @@ export function Companies() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
+                  {!c.cuit ? (
+                    <span className="text-gray-300">sin enviar</span>
+                  ) : c.cuit_verified ? (
+                    <div className="flex items-center gap-2">
+                      <Badge tone="green">Verificado</Badge>
+                      <span className="font-mono text-xs text-gray-500">{c.cuit}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs text-gray-700">{c.cuit}</span>
+                      {c.cuit_review_notes ? (
+                        <Badge tone="red">Rechazado</Badge>
+                      ) : (
+                        <Badge tone="yellow">Pendiente</Badge>
+                      )}
+                      <Button size="sm" loading={reviewing === c.id} onClick={() => review(c, true)}>
+                        Verificar
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => setRejectTarget(c)}>
+                        Rechazar
+                      </Button>
+                    </div>
+                  )}
+                </td>
+                <td className="px-4 py-3">
                   <div className="flex gap-2 justify-end">
                     <Link to={`/admin/companies/${c.id}`}>
                       <Button variant="ghost" size="sm">Usuarios</Button>
@@ -136,7 +183,7 @@ export function Companies() {
             ))}
             {companies.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={5} className="px-4 py-12 text-center text-gray-400">
                   No hay empresas todavía.
                 </td>
               </tr>
@@ -144,6 +191,34 @@ export function Companies() {
           </tbody>
         </table>
       </div>
+
+      {/* Rechazo de CUIT */}
+      <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title="Rechazar CUIT">
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (rejectTarget) review(rejectTarget, false, rejectReason); }}
+          className="flex flex-col gap-4"
+        >
+          <p className="text-sm text-gray-500">
+            {rejectTarget?.name} · <span className="font-mono">{rejectTarget?.cuit}</span>
+          </p>
+          <Input
+            label="Motivo"
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="No coincide con la razón social"
+            required
+          />
+          <p className="text-xs text-gray-400">
+            El motivo le llega a la agencia como notificación para que lo corrija.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" variant="danger" loading={reviewing === rejectTarget?.id}>
+              Rechazar
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setRejectTarget(null)}>Cancelar</Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Edit modal */}
       <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Editar empresa">

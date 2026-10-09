@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Company, CompanyProfile, RadarEntry } from "../types";
+import type { CompanyAdmin, Company, CompanyProfile, RadarEntry } from "../types";
 
 export interface CompanyProfileUpdate {
   name?: string;
@@ -21,6 +21,13 @@ export interface RadarEntryCreate {
 
 export const companyService = {
   list: (): Promise<Company[]> => api.get("/companies"),
+
+  // Vista del super admin: incluye los datos fiscales, que el listado abierto no trae.
+  adminList: (pendingCuit = false): Promise<CompanyAdmin[]> =>
+    api.get(`/companies/admin/companies${pendingCuit ? "?pending_cuit=true" : ""}`),
+
+  verifyCuit: (companyId: string, approved: boolean, reason?: string): Promise<void> =>
+    api.patch(`/companies/admin/companies/${companyId}/verify-cuit`, { approved, reason }),
   get: (id: string): Promise<Company> => api.get(`/companies/${id}`),
 
   getMyProfile: (): Promise<CompanyProfile> => api.get("/companies/me/profile"),

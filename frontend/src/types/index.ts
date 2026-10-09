@@ -59,3 +59,16 @@ export interface ApiError {
   detail: string;
   status: number;
 }
+
+export interface CompanyAdmin {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  cuit: string | null;
+  cuit_verified: boolean;
+  cuit_submitted_at: string | null;
+  cuit_reviewed_at: string | null;
+  cuit_review_notes: string | null;
+  created_at: string;
+}

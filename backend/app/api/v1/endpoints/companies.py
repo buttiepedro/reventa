@@ -11,6 +11,7 @@ from app.models.notification import Notification
 from app.models.radar_entry import RadarEntry
 from app.models.user import Role, User
 from app.schemas.company import (
+    CompanyAdminRead,
     CompanyCreate,
     CompanyProfile,
     CompanyProfileUpdate,
@@ -211,6 +212,19 @@ async def submit_cuit(
     company.cuit_submitted_at = datetime.now(timezone.utc)
     company.cuit_review_notes = None
     await session.flush()
+
+
+@router.get("/admin/companies", response_model=list[CompanyAdminRead])
+async def list_companies_for_admin(
+    pending_cuit: bool = False,
+    _: User = Depends(require_super_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Las agencias con sus datos fiscales, para revisar CUITs."""
+    companies = await CompanyService(session).get_all()
+    if pending_cuit:
+        companies = [c for c in companies if c.cuit and not c.cuit_verified]
+    return companies
 
 
 @router.patch("/admin/companies/{company_id}/verify-cuit", status_code=status.HTTP_204_NO_CONTENT)
