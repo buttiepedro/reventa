@@ -68,3 +68,58 @@ Solo los usuarios con empresa pueden acceder a la red.
 - `app/api/v1/endpoints/vehicles.py`
 - `src/pages/vehicles/NetworkCatalog.tsx`
 - `src/pages/vehicles/VehicleDetail.tsx`
+
+### Requirement: Avisos por coincidencia de Radar
+
+Cuando un vehículo se vuelve una oportunidad, el sistema SHALL avisarle a las
+agencias que lo estaban buscando.
+
+#### Scenario: Un auto que coincide con el Radar
+
+- **GIVEN** una agencia con una entrada de Radar por marca, y opcionalmente modelo,
+  año mínimo, km máximo y precio máximo
+- **WHEN** otra agencia publica un vehículo que cumple todo lo que esa entrada especifica
+- **THEN** la agencia recibe un aviso que dice que coincide con su Radar
+
+#### Scenario: El modelo matchea sin la versión
+
+- **GIVEN** una entrada de Radar por modelo "Corolla"
+- **WHEN** aparece un vehículo cuyo modelo es "Corolla XEI"
+- **THEN** coincide, porque el modelo es texto libre y la versión suele venir pegada
+
+#### Scenario: Los límites se respetan
+
+- **WHEN** el vehículo supera el precio máximo, supera los km máximos o es anterior
+  al año mínimo de la entrada
+- **THEN** no se avisa
+
+#### Scenario: Pre-toma, publicación y liquidación
+
+- **WHEN** un vehículo entra en pre-toma, se publica en la red o pasa a liquidación
+- **THEN** en los tres casos se cruza contra los Radares de la red
+
+#### Scenario: La liquidación se cruza contra el precio rebajado
+
+- **GIVEN** una agencia cuyo presupuesto máximo es menor al precio de reventa del vehículo
+- **WHEN** ese vehículo pasa a liquidación por debajo de ese presupuesto
+- **THEN** se le avisa, porque recién ahí el auto entra en lo que puede pagar
+
+#### Scenario: La dueña no se avisa a sí misma
+
+- **WHEN** el vehículo pertenece a la agencia que tiene la entrada de Radar
+- **THEN** no se le avisa
+
+### Requirement: Avisos a las agencias conectadas
+
+Las agencias conectadas SHALL enterarse de las novedades de sus conexiones, con un
+texto que diga que llegó por eso.
+
+#### Scenario: Conectada sin Radar
+
+- **WHEN** una agencia conectada publica un vehículo que no coincide con ningún Radar propio
+- **THEN** igual se recibe el aviso, identificado como novedad de una conectada
+
+#### Scenario: Conectada y con Radar coincidente
+
+- **WHEN** una agencia califica para los dos avisos por el mismo vehículo
+- **THEN** recibe uno solo, el de Radar, que es el que explica mejor por qué le llegó

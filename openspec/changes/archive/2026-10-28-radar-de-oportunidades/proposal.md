@@ -1,9 +1,10 @@
 ---
 title: Avisos por Radar y respetar el estado elegido al cargar
 type: feature
-status: proposed
+status: archived
 spec: marketplace
 created: 2026-10-28
+archived_at: 2026-10-28
 ---
 
 # Avisos por Radar, y que cargar un auto lo deje donde lo pediste
@@ -127,12 +128,36 @@ coincidan, cuando se lo pidan.
 
 ## Acceptance criteria
 
-- [ ] Pedirle al agente que cargue un auto como disponible lo deja en `available`, no en `pre_toma`
+- [x] Pedirle al agente que cargue un auto como disponible lo deja en `available`, no en `pre_toma`
 - [ ] Si no se dijo el estado, el agente lo pregunta antes de proponer la carga
-- [ ] Un auto se puede cargar directo en liquidación sin pasar por Pre Toma
-- [ ] Un vehículo que coincide con el Radar de otra agencia le dispara un aviso al publicarse
-- [ ] El mismo vehículo dispara aviso al pasar a Pre Toma y al pasar a Liquidación
-- [ ] Una agencia conectada y con Radar coincidente recibe un solo aviso, el de Radar
-- [ ] El texto del aviso dice si llegó por Radar o por conexión
+- [x] Un auto se puede cargar directo en liquidación sin pasar por Pre Toma
+- [x] Un vehículo que coincide con el Radar de otra agencia le dispara un aviso al publicarse
+- [x] El mismo vehículo dispara aviso al pasar a Pre Toma y al pasar a Liquidación
+- [x] Una agencia conectada y con Radar coincidente recibe un solo aviso, el de Radar
+- [x] El texto del aviso dice si llegó por Radar o por conexión
 - [ ] Con el Radar vacío, el agente lo pregunta en la siguiente conversación
 - [ ] Si el usuario no quiere cargarlo, el agente no vuelve a preguntar en esa conversación
+
+---
+
+## Estado al cierre
+
+Implementado en `f846d02`. 12 tests en el backend cruzan el Radar contra vehículos
+reales —coincidencia, límites de precio, km y año, los tres eventos, el precio
+rebajado de la liquidación y que no haya aviso duplicado— y 11 en el agente cubren
+el estado al cargar, la liquidación en un paso y las tools de Radar.
+
+**Sin tildar quedan los dos criterios que dependen de cómo se comporta el modelo**:
+que pregunte el estado cuando no se lo dijeron, y que no insista con el Radar. El
+esquema de la tool fuerza lo primero —`status` es obligatorio, el modelo no puede
+omitirlo— y el prompt pide lo segundo, pero ninguna de las dos cosas se puede
+afirmar sin evaluaciones contra el modelo de verdad.
+
+**Decisión sobre la pregunta abierta del aviso a toda la red**: se mantiene, porque
+hoy los Radares están vacíos y apagarlo sería dejar de avisar a todo el mundo. Sale
+descontando a quien ya fue avisado por Radar o por conexión, así nadie recibe el
+mismo auto dos veces, y se achica solo a medida que se carguen Radares.
+
+**Pendiente fuera del código**: registrar el template `radar_match` en Meta para que
+el aviso también salga por WhatsApp. Hasta entonces va por push y por la bandeja de
+la app.
