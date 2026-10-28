@@ -81,7 +81,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-white/92 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-line bg-surface">
       <div className="mx-auto flex h-[58px] max-w-2xl items-center gap-3 px-4 lg:h-[62px] lg:max-w-none lg:px-6">
         {/* Logo — hidden on desktop for company users (the rail carries the brand) */}
         <Link

@@ -684,8 +684,8 @@ function RadarTab() {
                 <p className="text-xs text-gray-400 mt-0.5">
                   {[
                     entry.min_year ? `desde ${entry.min_year}` : null,
-                    entry.max_km ? `hasta ${entry.max_km.toLocaleString()} km` : null,
-                    entry.max_price ? `hasta $${Number(entry.max_price).toLocaleString()}` : null,
+                    entry.max_km ? `hasta ${entry.max_km.toLocaleString("es-AR")} km` : null,
+                    entry.max_price ? `hasta $${Number(entry.max_price).toLocaleString("es-AR")}` : null,
                   ].filter(Boolean).join(" · ") || "Sin filtros adicionales"}
                 </p>
               </div>

@@ -150,7 +150,7 @@ export function VehicleDetail() {
 
           <div className="flex flex-wrap gap-2 mb-6">
             {[
-              `${vehicle.mileage.toLocaleString()} km`,
+              `${vehicle.mileage.toLocaleString("es-AR")} km`,
               FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type,
               vehicle.transmission === "manual" ? "Manual" : "Automático",
               vehicle.condition === "new" ? "Nuevo" : "Usado",
@@ -166,13 +166,13 @@ export function VehicleDetail() {
             {!isClientMode && (
               <div className="mb-3">
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Precio reventa</p>
-                <p className="text-3xl font-black text-green-600">${Number(vehicle.price_resale).toLocaleString()}</p>
+                <p className="text-3xl font-black text-green-600">${Number(vehicle.price_resale).toLocaleString("es-AR")}</p>
               </div>
             )}
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">{isClientMode ? "Precio" : "Precio público"}</p>
               <p className={`font-black ${isClientMode ? "text-3xl text-green-600" : "text-xl text-gray-700"}`}>
-                ${Number(vehicle.price_public).toLocaleString()}
+                ${Number(vehicle.price_public).toLocaleString("es-AR")}
               </p>
             </div>
           </div>

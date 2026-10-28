@@ -103,15 +103,15 @@ function Thermometer({
       {/* Labels */}
       <div className="flex justify-between px-1">
         <div>
-          <p className="font-mono text-[13px] font-semibold text-ink-soft">${Number(market_min).toLocaleString()}</p>
+          <p className="font-mono text-[13px] font-semibold text-ink-soft">${Number(market_min).toLocaleString("es-AR")}</p>
           <p className="text-[11px] text-faint">Mínimo</p>
         </div>
         <div className="text-center">
-          <p className="font-mono text-[13px] font-bold text-brand">${Number(suggested_price).toLocaleString()}</p>
+          <p className="font-mono text-[13px] font-bold text-brand">${Number(suggested_price).toLocaleString("es-AR")}</p>
           <p className="text-[11px] text-brand">Sugerido</p>
         </div>
         <div className="text-right">
-          <p className="font-mono text-[13px] font-semibold text-ink-soft">${Number(market_max).toLocaleString()}</p>
+          <p className="font-mono text-[13px] font-semibold text-ink-soft">${Number(market_max).toLocaleString("es-AR")}</p>
           <p className="text-[11px] text-faint">Máximo</p>
         </div>
       </div>
@@ -121,7 +121,7 @@ function Thermometer({
         <div className={`border-t border-line-soft pt-3 text-center text-sm font-bold ${verdictColor}`}>
           {verdict}
           <p className="mt-0.5 font-mono text-xs font-normal text-faint">
-            Tu oferta: ${Number(offerPrice).toLocaleString()}
+            Tu oferta: ${Number(offerPrice).toLocaleString("es-AR")}
           </p>
         </div>
       )}
@@ -133,7 +133,7 @@ function Thermometer({
           <div className="flex flex-wrap gap-1.5">
             {result.price_samples.map((p, i) => (
               <span key={i} className="rounded-md bg-canvas px-2 py-0.5 font-mono text-[11px] text-muted">
-                ${Number(p.toFixed(0)).toLocaleString()}
+                ${Number(p.toFixed(0)).toLocaleString("es-AR")}
               </span>
             ))}
           </div>
@@ -282,7 +282,7 @@ export function Tasador() {
                         />
                         <span className="text-sm text-gray-700">{label}</span>
                       </div>
-                      <span className="text-sm text-red-500 font-semibold">-${amount.toLocaleString()}</span>
+                      <span className="text-sm text-red-500 font-semibold">-${amount.toLocaleString("es-AR")}</span>
                     </label>
                   ))}
                   <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-2">
@@ -302,11 +302,11 @@ export function Tasador() {
                   <div className="space-y-1 border-t border-line-soft pt-3">
                     <div className="flex justify-between text-xs text-muted">
                       <span>Precio sugerido de red</span>
-                      <span className="font-mono">${Number(result.suggested_price).toLocaleString()}</span>
+                      <span className="font-mono">${Number(result.suggested_price).toLocaleString("es-AR")}</span>
                     </div>
                     <div className="flex justify-between text-xs text-red-600">
                       <span>Total deducciones</span>
-                      <span className="font-mono">-${totalDeduccion.toLocaleString()}</span>
+                      <span className="font-mono">-${totalDeduccion.toLocaleString("es-AR")}</span>
                     </div>
                   </div>
                 )}
@@ -319,11 +319,11 @@ export function Tasador() {
                     Precio máximo de toma sugerido
                   </p>
                   <p className="mt-2 font-mono text-[32px] font-bold leading-none tracking-tight text-white">
-                    ${Math.max(0, result.suggested_price - totalDeduccion).toLocaleString()}
+                    ${Math.max(0, result.suggested_price - totalDeduccion).toLocaleString("es-AR")}
                   </p>
                   <p className="mt-2.5 text-[12px] leading-relaxed" style={{ color: "#CBD5E1" }}>
                     {totalDeduccion > 0
-                      ? `Calculado restando $${totalDeduccion.toLocaleString()} en deducciones del precio sugerido de la red.`
+                      ? `Calculado restando $${totalDeduccion.toLocaleString("es-AR")} en deducciones del precio sugerido de la red.`
                       : "Basado en la media recortada de operaciones comparables de la red."}
                   </p>
                 </div>

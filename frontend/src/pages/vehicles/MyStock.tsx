@@ -81,16 +81,16 @@ function LiquidarModal({
         </div>
         <div className="px-5 py-4 space-y-3">
           <p className="text-sm text-gray-600">
-            {vehicle.brand} {vehicle.model} {vehicle.year} · Precio reventa: <strong>${Number(vehicle.price_resale).toLocaleString()}</strong>
+            {vehicle.brand} {vehicle.model} {vehicle.year} · Precio reventa: <strong>${Number(vehicle.price_resale).toLocaleString("es-AR")}</strong>
           </p>
-          <p className="text-xs text-gray-400">Precio máximo permitido (15% de descuento): <strong>${maxAllowed.toLocaleString()}</strong></p>
+          <p className="text-xs text-gray-400">Precio máximo permitido (15% de descuento): <strong>${maxAllowed.toLocaleString("es-AR")}</strong></p>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600">Precio de liquidación $</label>
             <input
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder={`hasta $${maxAllowed.toLocaleString()}`}
+              placeholder={`hasta $${maxAllowed.toLocaleString("es-AR")}`}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
@@ -234,8 +234,8 @@ export function MyStock() {
         </div>
       )}
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Mi stock</h1>
-        <div className="flex gap-2">
+        <h1 className="text-2xl font-bold text-ink">Mi stock</h1>
+        <div className="flex flex-wrap gap-2">
           {hasSheet && !isReventa && (
             <Button variant="secondary" loading={syncing} onClick={handleQuickSync}>
               Sincronizar hoja
@@ -271,19 +271,25 @@ export function MyStock() {
           </h2>
           <div className="bg-white rounded-xl border border-purple-100 shadow-sm divide-y divide-gray-50">
             {preTomaVehicles.map((v) => (
-              <div key={v.id} className="flex items-center gap-4 px-4 py-3">
-                <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                  {v.primary_image_url
-                    ? <img src={v.primary_image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    : <div className="flex items-center justify-center h-full text-xs text-gray-400">Sin img</div>
-                  }
+              <div key={v.id} className="px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-canvas">
+                    {v.primary_image_url
+                      ? <img src={v.primary_image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      : <div className="flex h-full items-center justify-center text-xs text-faint">Sin img</div>
+                    }
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-ink">{v.brand} {v.model} {v.year}</p>
+                    <p className="text-sm text-muted">
+                      {v.mileage.toLocaleString("es-AR")} km
+                      <span className="mx-1.5 text-line" aria-hidden="true">·</span>
+                      <span className="whitespace-nowrap">${Number(v.price_resale).toLocaleString("es-AR")}</span>
+                    </p>
+                  </div>
+                  <Badge tone="purple" className="shrink-0">Pre Toma</Badge>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 truncate">{v.brand} {v.model} {v.year}</p>
-                  <p className="text-sm text-gray-500">{v.mileage.toLocaleString()} km · ${Number(v.price_resale).toLocaleString()}</p>
-                </div>
-                <Badge tone="purple">Pre Toma</Badge>
-                <div className="flex gap-2 shrink-0">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <Button variant="secondary" size="sm" onClick={() => openInterests(v)}>Ver interesados</Button>
                   <Button size="sm" onClick={() => handleStatusChange(v.id, "available")}>Publicar en red</Button>
                   <Button variant="ghost" size="sm" onClick={() => navigate(`/vehicles/${v.id}/edit`)}>Editar</Button>
@@ -302,39 +308,46 @@ export function MyStock() {
           )}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
             {regularVehicles.map((v) => (
-              <div key={v.id} className="flex items-center gap-4 px-4 py-3">
-                <div className="w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                  {v.primary_image_url
-                    ? <img src={v.primary_image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    : <div className="flex items-center justify-center h-full text-xs text-gray-400">Sin img</div>
-                  }
-                </div>
+              <div key={v.id} className="px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-canvas">
+                    {v.primary_image_url
+                      ? <img src={v.primary_image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      : <div className="flex h-full items-center justify-center text-xs text-faint">Sin img</div>
+                    }
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 truncate">{v.brand} {v.model} {v.year}</p>
-                  <p className="text-sm text-gray-500">{v.mileage.toLocaleString()} km · ${Number(v.price_resale).toLocaleString()}</p>
-                  {v.is_liquidacion && v.liquidacion_expires_at && (
-                    <p className="text-[10px] text-red-500 font-semibold mt-0.5">
-                      LIQUIDACIÓN · Expira en {horasRestantes(v.liquidacion_expires_at)}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-ink">{v.brand} {v.model} {v.year}</p>
+                    {/* Cada dato en su renglón: en 390px "40.000 km · $80.000.000"
+                        se partía y el separador quedaba solo, como un punto suelto. */}
+                    <p className="text-sm text-muted">
+                      {v.mileage.toLocaleString("es-AR")} km
+                      <span className="mx-1.5 text-line" aria-hidden="true">·</span>
+                      <span className="whitespace-nowrap">${Number(v.price_resale).toLocaleString("es-AR")}</span>
                     </p>
-                  )}
+                    {v.is_liquidacion && v.liquidacion_expires_at && (
+                      <p className="mt-0.5 text-[10px] font-semibold text-red-500">
+                        LIQUIDACIÓN · Expira en {horasRestantes(v.liquidacion_expires_at)}
+                      </p>
+                    )}
+                  </div>
+
+                  <Badge tone={STATUS_TONE[v.status] ?? "gray"} className="shrink-0">
+                    {STATUS_LABELS[v.status] ?? v.status}
+                  </Badge>
                 </div>
 
-                <Badge tone={STATUS_TONE[v.status] ?? "gray"} className="hidden sm:inline-flex">
-                  {STATUS_LABELS[v.status] ?? v.status}
-                </Badge>
-
-                <select
-                  value={v.status}
-                  onChange={(e) => handleStatusChange(v.id, e.target.value as VehicleStatus)}
-                  className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-
-                <div className="flex gap-2 shrink-0 flex-wrap">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <select
+                    value={v.status}
+                    onChange={(e) => handleStatusChange(v.id, e.target.value as VehicleStatus)}
+                    className="rounded-lg border border-line bg-surface px-2 py-1.5 text-sm focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
+                  >
+                    {STATUS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
                   <Button variant="ghost" size="sm" onClick={() => navigate(`/vehicles/${v.id}`)}>Ver</Button>
                   <Button variant="secondary" size="sm" onClick={() => navigate(`/vehicles/${v.id}/edit`)}>Editar</Button>
                   {v.status === "available" && !isReventa && (
@@ -386,7 +399,7 @@ export function MyStock() {
                   {interests.map((i) => (
                     <li key={i.company_id} className="py-2.5 flex items-center justify-between">
                       <span className="font-medium text-gray-800">{i.company_name}</span>
-                      <span className="text-xs text-gray-400">{new Date(i.created_at).toLocaleDateString()}</span>
+                      <span className="text-xs text-gray-400">{new Date(i.created_at).toLocaleDateString("es-AR")}</span>
                     </li>
                   ))}
                 </ul>

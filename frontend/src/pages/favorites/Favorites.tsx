@@ -106,12 +106,12 @@ export function Favorites() {
               </h2>
               <div className="bg-white rounded-xl border border-blue-100 shadow-sm divide-y divide-gray-50">
                 {incoming.map((r) => (
-                  <div key={r.requester_id} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="font-semibold text-gray-900">{r.requester_name}</p>
+                  <div key={r.requester_id} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-gray-900">{r.requester_name}</p>
                       <p className="text-xs text-gray-400">Te envió una solicitud de conexión</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex shrink-0 gap-2">
                       <Button size="sm" onClick={() => handleAccept(r.requester_id)}>Aceptar</Button>
                       <Button variant="danger" size="sm" onClick={() => handleReject(r.requester_id)}>Rechazar</Button>
                     </div>
@@ -127,14 +127,15 @@ export function Favorites() {
               <h2 className="text-sm font-semibold text-gray-700 mb-3">Conectadas</h2>
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                 {confirmed.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="font-semibold text-gray-900 flex items-center gap-1.5">
-                        <span className="text-green-500 text-xs">●</span> {c.name}
+                  <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1.5 font-semibold text-gray-900">
+                        <span className="shrink-0 text-xs text-brand-lo">●</span>
+                        <span className="truncate">{c.name}</span>
                       </p>
                       <p className="text-xs text-gray-400">{c.slug}</p>
                     </div>
-                    <Button variant="danger" size="sm" onClick={() => handleRemove(c.id)}>Desconectar</Button>
+                    <Button variant="danger" size="sm" className="shrink-0" onClick={() => handleRemove(c.id)}>Desconectar</Button>
                   </div>
                 ))}
               </div>
@@ -147,11 +148,11 @@ export function Favorites() {
               <h2 className="text-sm font-semibold text-gray-700 mb-3">Solicitudes enviadas</h2>
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                 {outgoing.map((r) => (
-                  <div key={r.requester_id} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="font-semibold text-gray-900">{r.requester_name}</p>
+                  <div key={r.requester_id} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-gray-900">{r.requester_name}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <Badge tone="yellow">Pendiente</Badge>
                       <Button variant="danger" size="sm" onClick={() => handleReject(r.requester_id)}>Cancelar</Button>
                     </div>
@@ -167,12 +168,12 @@ export function Favorites() {
               <h2 className="text-sm font-semibold text-gray-700 mb-3">Otras concesionarias en la red</h2>
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                 {available.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="font-semibold text-gray-900">{c.name}</p>
+                  <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-gray-900">{c.name}</p>
                       <p className="text-xs text-gray-400">{c.slug}</p>
                     </div>
-                    <Button variant="secondary" size="sm" onClick={() => handleSendRequest(c.id)}>
+                    <Button variant="secondary" size="sm" className="shrink-0" onClick={() => handleSendRequest(c.id)}>
                       Conectar
                     </Button>
                   </div>

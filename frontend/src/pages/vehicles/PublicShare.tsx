@@ -87,7 +87,7 @@ export function PublicShare() {
 
             <div className="flex flex-wrap gap-2 mb-6">
               {[
-                `${vehicle.mileage.toLocaleString()} km`,
+                `${vehicle.mileage.toLocaleString("es-AR")} km`,
                 FUEL_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type,
                 vehicle.transmission === "manual" ? "Manual" : "Automático",
                 vehicle.condition === "new" ? "Nuevo" : "Usado",

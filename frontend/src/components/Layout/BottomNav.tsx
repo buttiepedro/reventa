@@ -7,7 +7,7 @@ export function BottomNav() {
   const visibleTabs = isClientMode ? navItems.filter((t) => t.to === "/mercado") : navItems;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-white/92 backdrop-blur-md safe-area-pb lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-surface safe-area-pb lg:hidden">
       <div className="mx-auto flex h-[68px] max-w-2xl items-stretch pt-2">
         {visibleTabs.map((tab) => (
           <NavLink

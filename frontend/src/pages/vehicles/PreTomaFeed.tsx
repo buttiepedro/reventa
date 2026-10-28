@@ -97,7 +97,7 @@ export function PreTomaFeed() {
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 text-xs text-gray-600">
-                  <span className="bg-gray-100 rounded px-1.5 py-0.5">{v.mileage.toLocaleString()} km</span>
+                  <span className="bg-gray-100 rounded px-1.5 py-0.5">{v.mileage.toLocaleString("es-AR")} km</span>
                   <span className="bg-gray-100 rounded px-1.5 py-0.5">{FUEL_LABELS[v.fuel_type] ?? v.fuel_type}</span>
                   <span className="bg-gray-100 rounded px-1.5 py-0.5">{TRANS_LABELS[v.transmission] ?? v.transmission}</span>
                 </div>

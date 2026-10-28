@@ -138,7 +138,8 @@ export function CompanyDetail() {
         <div className="px-4 py-3 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Usuarios ({users.length})</h2>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Nombre</th>
@@ -176,6 +177,7 @@ export function CompanyDetail() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Edit modal */}

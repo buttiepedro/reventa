@@ -86,7 +86,7 @@ function RequestCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="font-mono text-[17px] font-bold leading-none text-ink">
-              ${Number(request.budget_max).toLocaleString()}
+              ${Number(request.budget_max).toLocaleString("es-AR")}
             </div>
             <div className="mt-1 text-[11.5px] text-faint">
               {PAYMENT_LABELS[request.payment_method] ?? request.payment_method}
@@ -106,7 +106,7 @@ function RequestCard({
         <div className="mt-2 flex flex-wrap gap-1.5">
           {request.budget_min != null && (
             <span className="rounded-md border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
-              desde ${Number(request.budget_min).toLocaleString()}
+              desde ${Number(request.budget_min).toLocaleString("es-AR")}
             </span>
           )}
           {request.offer_count > 0 && (
@@ -140,7 +140,7 @@ function RequestCard({
               <option value="">— Elegí un vehículo —</option>
               {myVehicles.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.brand} {v.model} {v.year} · ${Number(v.price_resale).toLocaleString()}
+                  {v.brand} {v.model} {v.year} · ${Number(v.price_resale).toLocaleString("es-AR")}
                 </option>
               ))}
             </select>
@@ -312,7 +312,7 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
                     {req.reference_models?.length ? req.reference_models.join(", ") : "Cualquier vehículo"}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    hasta ${Number(req.budget_max).toLocaleString()} · {PAYMENT_LABELS[req.payment_method] ?? req.payment_method}
+                    hasta ${Number(req.budget_max).toLocaleString("es-AR")} · {PAYMENT_LABELS[req.payment_method] ?? req.payment_method}
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
@@ -344,7 +344,7 @@ function MyRequestsTab({ onRequestCreated }: { onRequestCreated: () => void }) {
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-sm font-semibold text-gray-800">{offer.vehicle_label}</p>
-                        <p className="text-xs text-gray-400">{offer.offering_company_name} · ${Number(offer.vehicle_price).toLocaleString()}</p>
+                        <p className="text-xs text-gray-400">{offer.offering_company_name} · ${Number(offer.vehicle_price).toLocaleString("es-AR")}</p>
                         {offer.message && <p className="text-xs text-gray-500 mt-0.5 italic">"{offer.message}"</p>}
                       </div>
                       <div className="flex flex-col items-end gap-1 ml-3">
