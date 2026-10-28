@@ -192,6 +192,8 @@ class VehicleService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your vehicle")
 
     async def update(self, vehicle_id: uuid.UUID, company_id: uuid.UUID, data: VehicleUpdate, is_super_admin: bool = False) -> Vehicle:
+        from app.services import radar
+
         vehicle = await self.get_or_404(vehicle_id)
         self._assert_owner(vehicle, company_id, is_super_admin)
         old_status = vehicle.status
@@ -202,9 +204,14 @@ class VehicleService:
         saved = await self.repo.save(vehicle)
         if saved.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
             await self._notify_favorites_pre_toma(saved)
+            await radar.notify_opportunity(self.session, saved, radar.EVENT_PRE_TOMA)
+        elif saved.status == VehicleStatus.AVAILABLE and old_status != VehicleStatus.AVAILABLE:
+            await radar.notify_opportunity(self.session, saved, radar.EVENT_PUBLICADO)
         return saved
 
     async def update_status(self, vehicle_id: uuid.UUID, company_id: uuid.UUID, data: VehicleStatusUpdate, is_super_admin: bool = False) -> Vehicle:
+        from app.services import radar
+
         vehicle = await self.get_or_404(vehicle_id)
         self._assert_owner(vehicle, company_id, is_super_admin)
         old_status = vehicle.status
@@ -221,6 +228,9 @@ class VehicleService:
         saved = await self.repo.save(vehicle)
         if saved.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
             await self._notify_favorites_pre_toma(saved)
+            await radar.notify_opportunity(self.session, saved, radar.EVENT_PRE_TOMA)
+        elif saved.status == VehicleStatus.AVAILABLE and old_status != VehicleStatus.AVAILABLE:
+            await radar.notify_opportunity(self.session, saved, radar.EVENT_PUBLICADO)
         return saved
 
     async def delete(self, vehicle_id: uuid.UUID, company_id: uuid.UUID, is_super_admin: bool = False) -> None:

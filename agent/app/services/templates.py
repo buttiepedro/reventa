@@ -28,6 +28,11 @@ TEMPLATES: dict[str, Template] = {
         params=("label",),
         text="Nueva pre-toma en la red: {label}.",
     ),
+    "radar_match": Template(
+        meta_name="radar_match",
+        params=("label", "agencia"),
+        text="Apareció algo de tu Radar: {label}, en {agencia}.",
+    ),
     "nueva_oferta": Template(
         meta_name="nueva_oferta",
         params=("label",),

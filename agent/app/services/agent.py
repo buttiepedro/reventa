@@ -39,19 +39,37 @@ el usuario quiera ver un auto puntual o pida fotos, usala. Nunca pegues una URL 
 foto en el texto: no las tenés.
 - Si te falta un dato para buscar bien, preguntalo en vez de asumir.
 
+Qué es una pre-toma:
+- Un auto que la agencia TODAVÍA NO recibió y está por tomar, casi siempre en parte \
+de pago. Se publica por debajo del precio de mercado para ver si alguien de la red lo \
+quiere antes de quedárselo.
+- Un auto publicado (disponible) es otra cosa: ya es de la agencia y está a la venta \
+en la red.
+- Nunca asumas cuál de los dos es. Si el usuario no lo dijo, preguntáselo antes de \
+proponer la carga.
+
 Cómo cargás un auto:
 - Cuando te mandan fotos con una descripción, mirá las fotos, sacá los datos que puedas y \
 normalizá marca y modelo contra el catálogo si tenés dudas.
 - Nunca inventes un dato que no viste ni te dijeron. El color y los kilómetros salen de lo \
 que diga el usuario o de lo que se vea claramente; si no, preguntá.
 - Si el usuario no dio el precio al público, preguntáselo antes de proponer la carga.
-- Llamás a proponer_carga_vehiculo, y después mostrás el resumen y preguntás si confirma.
+- Llamás a proponer_carga_vehiculo con el estado que pidió el usuario, y después \
+mostrás el resumen y preguntás si confirma.
+- Si te piden cargarlo directo en liquidación, va como disponible con precio de \
+liquidación, que tiene que ser al menos 15% menor al de reventa.
+
+El Radar:
+- Es lo que la agencia está buscando. Cuando aparece en la red un auto que coincide, \
+le avisan sola.
+- {radar}
+- Si lo cargás, usá proponer_entrada_radar como cualquier otro cambio: propuesta y \
+confirmación.
 
 Regla de oro sobre los cambios:
 - No creás ni modificás NADA sin una confirmación explícita del usuario en su mensaje.
 - proponer_* solo deja la propuesta lista. Recién confirmar_accion_pendiente la ejecuta.
 - Si no estás seguro de que el usuario dijo que sí, volvé a preguntar.
-- Los autos que cargás por acá quedan como pre-toma.
 
 - Antes de tocar un auto o una oferta, buscá su id con las tools de lectura. Nunca \
 inventes un id ni uses uno que el usuario no pueda reconocer: nombrá el auto por marca, \
@@ -75,6 +93,30 @@ rechaza o cambia de tema, llamá a descartar_accion_pendiente.
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+async def _radar_hint(client: StockarClient) -> str:
+    """Qué decirle al modelo sobre el Radar de esta agencia.
+
+    Si está vacío se le pide que lo pregunte, una sola vez: insistir en cada
+    conversación es la forma más rápida de que dejen de leer al agente.
+    """
+    try:
+        status_code, body = await client.get("/companies/me/radar")
+    except StockarError:
+        return "No pude leer el Radar; no lo menciones."
+    if status_code >= 400 or not isinstance(body, list):
+        return "No pude leer el Radar; no lo menciones."
+    if not body:
+        return (
+            "El Radar está VACÍO. Si viene al caso en esta conversación, preguntale una "
+            "sola vez qué marcas o modelos busca y ofrecé cargarlo. Si no quiere o cambia "
+            "de tema, no insistas."
+        )
+    buscados = ", ".join(
+        " ".join(str(e.get(k)) for k in ("brand", "model") if e.get(k)) for e in body[:8]
+    )
+    return f"La agencia busca: {buscados}. Usalo para recomendar autos de la red."
 
 
 async def get_or_create_conversation(
@@ -171,7 +213,7 @@ async def run_turn(
         f"- Rol: {profile.get('role')}\n"
         f"- Agencia: {(profile.get('company') or {}).get('name', 'sin agencia')}"
     )
-    system = SYSTEM_PROMPT.format(perfil=perfil)
+    system = SYSTEM_PROMPT.format(perfil=perfil, radar=await _radar_hint(client))
     pending = actions.describe_pending(conversation)
     if pending:
         system += PENDING_NOTE.format(pending=pending)

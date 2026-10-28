@@ -25,6 +25,7 @@ from app.schemas.vehicle import (
     VehicleUpdate,
 )
 from app.schemas.vehicle_image import UploadUrlResponse, VehicleImageCreate, VehicleImageRead
+from app.services import radar
 from app.services.vehicle import VehicleService
 from app.services.vehicle_image import VehicleImageService
 
@@ -125,24 +126,10 @@ async def create_vehicle(
     result = await svc.get_detail(vehicle.id, current_user.company_id)
 
     if data.status and data.status.value == "pre_toma":
-        from app.models.company import Company as _Company
-        from app.services.push import send_push
-        companies = (await session.execute(
-            select(_Company).where(_Company.id != current_user.company_id, _Company.is_active == True)
-        )).scalars().all()
-        label = f"{vehicle.brand} {vehicle.model} {vehicle.year}"
-        company_ids = [c.id for c in companies]
-
-        async def _push_pretoma() -> None:
-            from app.services.whatsapp_notify import notify_whatsapp
-            async with AsyncSessionLocal() as bg_session:
-                for cid in company_ids:
-                    await send_push(bg_session, cid, f"Nueva Pre-Toma: {label}", f"Publicada ahora en la red", "/")
-                # One call for the whole network, not one per agency.
-                await notify_whatsapp(bg_session, company_ids, "nueva_pretoma", {"label": label})
-                await bg_session.commit()
-
-        asyncio.create_task(_push_pretoma())
+        await radar.notify_opportunity(session, vehicle, radar.EVENT_PRE_TOMA, broadcast_rest=True)
+    elif vehicle.status == VehicleStatus.AVAILABLE:
+        # Un auto que nace publicado también es una oportunidad para quien lo busca.
+        await radar.notify_opportunity(session, vehicle, radar.EVENT_PUBLICADO)
 
     return result
 
@@ -237,6 +224,11 @@ async def publish_liquidacion(
         expires_at=datetime.now(tz.utc) + timedelta(hours=72),
     )
     session.add(liq)
+    # El Radar se cruza contra el precio de liquidación: es más barato que el de
+    # lista, así que entra en presupuestos donde el auto antes no entraba.
+    await radar.notify_opportunity(
+        session, vehicle, radar.EVENT_LIQUIDACION, price=data.liquidacion_price
+    )
 
 
 @router.delete("/{vehicle_id}/liquidar", status_code=status.HTTP_204_NO_CONTENT)

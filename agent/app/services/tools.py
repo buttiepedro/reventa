@@ -141,6 +141,14 @@ TOOLS: list[dict] = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
+        "name": "mi_radar",
+        "description": (
+            "Las marcas y modelos que la agencia tiene en el Radar, o sea lo que está "
+            "buscando. Sirve para recomendar autos de la red que le sirvan."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
         "name": "enviar_fotos",
         "description": (
             "Manda por WhatsApp las fotos de un vehículo, como imágenes de verdad. "
@@ -165,7 +173,8 @@ TOOLS: list[dict] = [
             "Prepara la carga de un vehículo para que el usuario la confirme. NO carga nada: "
             "deja la propuesta lista y después vos le mostrás el resumen y le preguntás si "
             "confirma. Las fotos que mandó el usuario en este mensaje se adjuntan solas, no "
-            "las pases vos. Si te falta un dato obligatorio, preguntáselo en vez de inventarlo."
+            "las pases vos. Si te falta un dato obligatorio, preguntáselo en vez de inventarlo, "
+            "incluido el estado: una pre-toma y un auto publicado no son lo mismo."
         ),
         "input_schema": {
             "type": "object",
@@ -185,6 +194,22 @@ TOOLS: list[dict] = [
                 },
                 "plate": {"type": "string"},
                 "description": {"type": "string"},
+                "status": {
+                    "type": "string",
+                    "enum": ["available", "pre_toma"],
+                    "description": (
+                        "available = publicado en la red, el auto ya es de la agencia. "
+                        "pre_toma = todavía no lo recibió, lo está por tomar. Preguntale al "
+                        "usuario cuál es si no lo dijo; no lo adivines."
+                    ),
+                },
+                "liquidacion_price": {
+                    "type": "integer",
+                    "description": (
+                        "Sólo si el usuario pide cargarlo directo en liquidación. Tiene que ser "
+                        "al menos 15% menor al precio de reventa. Requiere status=available."
+                    ),
+                },
                 "resumen": {
                     "type": "string",
                     "description": "Resumen en una línea de lo que se va a cargar, para mostrarle al usuario",
@@ -192,7 +217,7 @@ TOOLS: list[dict] = [
             },
             "required": [
                 "brand", "model", "year", "color", "mileage",
-                "fuel_type", "transmission", "price_resale", "resumen",
+                "fuel_type", "transmission", "price_resale", "status", "resumen",
             ],
         },
     },
@@ -304,6 +329,26 @@ TOOLS: list[dict] = [
         },
     },
     {
+        "name": "proponer_entrada_radar",
+        "description": (
+            "Prepara agregar al Radar de la agencia una marca o modelo que está buscando, "
+            "para que le avisen cuando aparezca. No lo agrega: queda pendiente de "
+            "confirmación como cualquier otro cambio."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "brand": {"type": "string", "description": "Marca, obligatoria"},
+                "model": {"type": "string", "description": "Modelo, si lo dijo"},
+                "min_year": {"type": "integer"},
+                "max_km": {"type": "integer"},
+                "max_price": {"type": "integer", "description": "Presupuesto máximo, en pesos"},
+                "resumen": {'type': 'string', 'description': 'Resumen en una línea de lo que se va a hacer, para mostrarle al usuario'},
+            },
+            "required": ["brand", "resumen"],
+        },
+    },
+    {
         "name": "proponer_interes_pretoma",
         "description": (
             "Prepara marcar interés en una pre-toma de otra agencia, lo que le avisa al dueño. "
@@ -396,6 +441,8 @@ async def _dispatch(name: str, args: dict, client: StockarClient) -> tuple[int, 
             return await client.get("/vehicles/pre-toma")
         case "mi_red_de_agencias":
             return await client.get("/favorites")
+        case "mi_radar":
+            return await client.get("/companies/me/radar")
         case "solicitudes_lonja":
             if args.get("mias"):
                 return await client.get("/lonja/my-requests")
@@ -508,6 +555,9 @@ _STATEFUL = {
     "proponer_oferta": _proposer("ofertar", ("request_id", "vehicle_id", "message")),
     "proponer_respuesta_oferta": _proposer("responder_oferta", ("offer_id", "new_status")),
     "proponer_interes_pretoma": _proposer("marcar_interes", ("vehicle_id",)),
+    "proponer_entrada_radar": _proposer(
+        "crear_entrada_radar", ("brand", "model", "min_year", "max_km", "max_price")
+    ),
     "confirmar_accion_pendiente": _confirmar_accion_pendiente,
     "descartar_accion_pendiente": _descartar_accion_pendiente,
 }

@@ -100,7 +100,8 @@ async def test_a_tool_call_round_trips_into_the_next_request(session, conversati
     reply = await agent.run_turn(session, conversation, user_id, "¿hay corollas?")
 
     assert reply == "Hay un Corolla 2019."
-    assert stockar.calls == [("/vehicles", {"brand": "Toyota", "model": "Corolla"})]
+    # El turno consulta el Radar para armar el prompt, así que no es la única llamada.
+    assert ("/vehicles", {"brand": "Toyota", "model": "Corolla"}) in stockar.calls
 
     second = model.requests[1]["messages"]
     assert second[-2]["role"] == "assistant"

@@ -111,9 +111,11 @@ async def confirm(
 
 async def _crear_vehiculo(client: StockarClient, pending: dict) -> tuple[int, str]:
     payload = dict(pending["payload"])
-    # Anything loaded from a photo is a pre-toma: reversible, and it expires on its
-    # own if it turns out the agent misread the car.
-    payload["status"] = "pre_toma"
+    # El estado lo elige el usuario. Antes esto forzaba pre_toma para que una carga
+    # leída de una foto fuera reversible, pero convertía en pre-toma un auto que
+    # pidieron publicar, y una pre-toma significa otra cosa: que todavía no es tuyo.
+    liquidacion_price = payload.pop("liquidacion_price", None)
+    payload.setdefault("status", "pre_toma")
     payload.setdefault("condition", "used")
     if payload.get("price_public") is None:
         payload["price_public"] = payload.get("price_resale")
@@ -130,9 +132,24 @@ async def _crear_vehiculo(client: StockarClient, pending: dict) -> tuple[int, st
     if settings.app_public_url and body.get("share_token"):
         link = f" {settings.app_public_url.rstrip('/')}/share/{body['share_token']}"
 
-    note = f"Se creó el vehículo con {uploaded} foto(s)."
+    estado = "como pre-toma" if payload["status"] == "pre_toma" else "publicado en la red"
+    note = f"Se creó el vehículo {estado}, con {uploaded} foto(s)."
     if failed:
         note += f" {failed} foto(s) no se pudieron subir; el auto quedó cargado igual."
+
+    if liquidacion_price is not None:
+        # Cargar directo en liquidación es crear y liquidar: la API exige que el auto
+        # esté disponible, así que esto sólo prospera cuando se publicó.
+        liq_code, liq_body = await client.request(
+            "PATCH", f"/vehicles/{vehicle_id}/liquidar",
+            json={"liquidacion_price": liquidacion_price},
+        )
+        if liq_code >= 400:
+            detail = liq_body.get("detail") if isinstance(liq_body, dict) else liq_body
+            note += f" No se pudo poner en liquidación ({liq_code}): {detail}"
+        else:
+            note += " Quedó publicado en liquidación."
+
     return status_code, f"{note}{link}"
 
 
@@ -227,6 +244,12 @@ async def _responder_oferta(client: StockarClient, pending: dict) -> tuple[int, 
     return _report(status_code, body, f"Oferta {done}.")
 
 
+async def _crear_entrada_radar(client: StockarClient, pending: dict) -> tuple[int, str]:
+    payload = {k: v for k, v in pending["payload"].items() if v is not None}
+    status_code, body = await client.post("/companies/me/radar", payload)
+    return _report(status_code, body, "Lo agregué al Radar; te van a avisar cuando aparezca algo así.")
+
+
 async def _marcar_interes(client: StockarClient, pending: dict) -> tuple[int, str]:
     payload = pending["payload"]
     status_code, body = await client.post(f"/vehicles/{payload['vehicle_id']}/interest")
@@ -249,4 +272,5 @@ _HANDLERS = {
     "ofertar": _ofertar,
     "responder_oferta": _responder_oferta,
     "marcar_interes": _marcar_interes,
+    "crear_entrada_radar": _crear_entrada_radar,
 }
