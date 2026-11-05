@@ -37,7 +37,9 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
         vehicle.is_favorite_company ? "ring-1 ring-brand" : "border border-line"
       }`}>
         {/* Image */}
-        <div className="relative aspect-video bg-canvas">
+        {/* 4:3 como el detalle y el link público: una foto de celular es 4:3 y en
+            16:9 se le cortaba el auto arriba y abajo. */}
+        <div className="relative aspect-[4/3] bg-canvas">
           {vehicle.primary_image_url ? (
             <img
               src={vehicle.primary_image_url}
