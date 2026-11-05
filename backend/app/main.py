@@ -14,7 +14,6 @@ from app.core.database import AsyncSessionLocal
 from app.core.seed import seed_super_admin
 from app.models.client_request import ClientRequest
 from app.models.liquidacion import Liquidacion
-from app.services.vehicle import VehicleService
 
 
 def _run_migrations() -> None:
@@ -80,30 +79,16 @@ async def _lonja_expiry_loop() -> None:
             print(f"[scheduler] Lonja expiry error: {exc}", flush=True)
 
 
-async def _pretoma_expiry_loop() -> None:
-    while True:
-        await asyncio.sleep(3600)  # every hour
-        try:
-            async with AsyncSessionLocal() as session:
-                expired = await VehicleService.expire_pretoma_ttl(session)
-                if expired:
-                    print(f"[scheduler] Expired {expired} pre-toma vehicle(s).", flush=True)
-        except Exception as exc:
-            print(f"[scheduler] Pre-toma expiry error: {exc}", flush=True)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await asyncio.to_thread(_run_migrations)
     await seed_super_admin()
-    task_pretoma = asyncio.create_task(_pretoma_expiry_loop())
     task_lonja = asyncio.create_task(_lonja_expiry_loop())
     task_liq = asyncio.create_task(_liquidacion_expiry_loop())
     yield
-    task_pretoma.cancel()
     task_lonja.cancel()
     task_liq.cancel()
-    for t in (task_pretoma, task_lonja, task_liq):
+    for t in (task_lonja, task_liq):
         try:
             await t
         except asyncio.CancelledError:

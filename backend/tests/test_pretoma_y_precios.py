@@ -95,8 +95,6 @@ class TestVencimiento:
             v = await s.get(Vehicle, creado["id"])
             v.pre_toma_expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
             await s.commit()
-            from app.services.vehicle import VehicleService
-            await VehicleService.expire_pretoma_ttl(s)
 
         async with AsyncSessionLocal() as s:
             assert (await s.get(Vehicle, creado["id"])).status.value == "pre_toma"

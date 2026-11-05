@@ -263,23 +263,6 @@ class VehicleService:
         self._assert_owner(vehicle, company_id, is_super_admin)
         await self.repo.delete(vehicle)
 
-    @staticmethod
-    async def expire_pretoma_ttl(session: AsyncSession) -> int:
-        now = datetime.now(timezone.utc)
-        result = await session.execute(
-            select(Vehicle).where(
-                Vehicle.status == VehicleStatus.PRE_TOMA,
-                Vehicle.pre_toma_expires_at.isnot(None),
-                Vehicle.pre_toma_expires_at <= now,
-            )
-        )
-        expired = result.scalars().all()
-        # Antes esto las pasaba a `available`, o sea que el auto que la agencia no
-        # quería tomar terminaba publicado como stock suyo. Ahora simplemente dejan
-        # de verse: el filtro por `pre_toma_expires_at` las excluye en todas las
-        # consultas, y el registro queda para el historial de precios.
-        return len(expired)
-
     async def get_public(self, share_token: uuid.UUID) -> dict:
         v = await self.repo.get_by_share_token(share_token)
         if not v:
