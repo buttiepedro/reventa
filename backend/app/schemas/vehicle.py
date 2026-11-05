@@ -142,6 +142,7 @@ class VehicleListItem(BaseModel):
     is_liquidacion: bool = False
     liquidacion_price: Decimal | None = None
     liquidacion_expires_at: datetime | None = None
+    pre_toma_expires_at: datetime | None = None
     created_at: datetime
 
 

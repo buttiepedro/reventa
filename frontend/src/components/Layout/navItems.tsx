@@ -64,6 +64,19 @@ export const navItems: NavItem[] = [
       ),
   },
   {
+    to: "/radar",
+    label: "Radar",
+    icon: (cls) =>
+      svg(
+        cls,
+        <>
+          <circle cx="12" cy="12" r="8.5" />
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 12 18 6" />
+        </>,
+      ),
+  },
+  {
     to: "/agencia",
     label: "Mi Agencia",
     icon: (cls) =>

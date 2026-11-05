@@ -59,6 +59,7 @@ export interface VehicleListItem {
   is_liquidacion?: boolean;
   liquidacion_price?: number | null;
   liquidacion_expires_at?: string | null;
+  pre_toma_expires_at?: string | null;
   created_at?: string;
 }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { MyPreTomaCard } from "@/components/vehicles/MyPreTomaCard";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { FilterBar } from "@/components/vehicles/FilterBar";
 import { Spinner } from "@/components/ui/Spinner";
@@ -109,32 +110,58 @@ function TabToggle({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
 
 function PreTomaFeedTab() {
   const [vehicles, setVehicles] = useState<VehicleListItem[]>([]);
+  const [mine, setMine] = useState<VehicleListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    vehicleService.listPreToma()
-      .then(setVehicles)
-      .catch(() => {})
+    Promise.all([
+      vehicleService.listPreToma().catch(() => []),
+      // Las propias no están en Mi stock: son autos que la agencia ofrece, no que tiene.
+      vehicleService.listMyPreTomas().catch(() => []),
+    ])
+      .then(([red, propias]) => { setVehicles(red); setMine(propias); })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="flex justify-center py-16"><Spinner /></div>;
 
-  if (vehicles.length === 0) {
-    return (
-      <div className="rounded-2xl border border-line bg-surface p-8 text-center">
-        <p className="text-3xl mb-2">🚗</p>
-        <p className="text-sm font-semibold text-gray-700">Sin pre-tomas activas</p>
-        <p className="text-xs text-gray-400 mt-1">Las pre-tomas de tus favoritas confirmadas aparecerán acá.</p>
-      </div>
-    );
-  }
+  const vigentes = mine.filter((v) => !v.pre_toma_expires_at || new Date(v.pre_toma_expires_at) > new Date());
 
   return (
-    <div className="space-y-3">
-      {vehicles.map((v) => (
-        <VehicleCard key={v.id} vehicle={v} showPreTomaActions />
-      ))}
+    <div className="space-y-5">
+      {vigentes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-ink">
+            Tuyas <span className="font-normal text-faint">· {vigentes.length}</span>
+          </h2>
+          {vigentes.map((v) => (
+            <MyPreTomaCard
+              key={v.id}
+              vehicle={v}
+              onPublish={async (id) => {
+                await vehicleService.updateStatus(id, "available");
+                toast.success("Te quedaste el auto; ya está publicado en la red.");
+                setMine((prev) => prev.filter((x) => x.id !== id));
+              }}
+            />
+          ))}
+        </section>
+      )}
+
+      <section className="space-y-3">
+        {vigentes.length > 0 && <h2 className="text-sm font-semibold text-ink">De la red</h2>}
+        {vehicles.length === 0 ? (
+          <div className="rounded-2xl border border-line bg-surface p-8 text-center">
+            <p className="mb-2 text-3xl">🚗</p>
+            <p className="text-sm font-semibold text-ink">Sin pre-tomas activas</p>
+            <p className="mt-1 text-xs text-faint">
+              Acá aparecen los autos que otras agencias ofrecen por 24 horas antes de tomarlos.
+            </p>
+          </div>
+        ) : (
+          vehicles.map((v) => <VehicleCard key={v.id} vehicle={v} showPreTomaActions />)
+        )}
+      </section>
     </div>
   );
 }

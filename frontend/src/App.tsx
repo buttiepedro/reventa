@@ -13,6 +13,7 @@ import { Lonja } from "@/pages/lonja/Lonja";
 import { Mercado } from "@/pages/mercado/Mercado";
 import { Tasador } from "@/pages/tasador/Tasador";
 import { MyAgency } from "@/pages/agency/MyAgency";
+import { Radar } from "@/pages/radar/Radar";
 import { Companies } from "@/pages/admin/Companies";
 import { CompanyDetail } from "@/pages/admin/CompanyDetail";
 import { MyStock } from "@/pages/vehicles/MyStock";
@@ -67,6 +68,7 @@ export function App() {
               <Route path="/lonja" element={<Protected roles={COMPANY_ROLES}><Lonja /></Protected>} />
               <Route path="/mercado" element={<Protected roles={COMPANY_ROLES}><Mercado /></Protected>} />
               <Route path="/tasador" element={<Protected roles={COMPANY_ROLES}><Tasador /></Protected>} />
+              <Route path="/radar" element={<Protected roles={COMPANY_ROLES}><Radar /></Protected>} />
               <Route path="/agencia" element={<Protected roles={COMPANY_ROLES}><MyAgency /></Protected>} />
 
               {/* Company stock management */}

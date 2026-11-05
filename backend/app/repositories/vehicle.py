@@ -32,15 +32,37 @@ class VehicleRepository(BaseRepository[Vehicle]):
         return result.scalar_one_or_none()
 
     async def get_by_company(self, company_id: uuid.UUID) -> list[Vehicle]:
+        """El stock de la agencia. Las pre-tomas quedan afuera: son autos que la
+        agencia NO se quiere quedar, ofrecidos a la red por 24 horas."""
         result = await self.session.execute(
-            select(Vehicle).where(Vehicle.company_id == company_id).order_by(Vehicle.created_at.desc())
+            select(Vehicle)
+            .where(Vehicle.company_id == company_id, Vehicle.status != VehicleStatus.PRE_TOMA)
+            .order_by(Vehicle.created_at.desc())
         )
         return list(result.scalars().all())
 
-    async def get_pre_toma_by_companies(self, company_ids: list[uuid.UUID]) -> list[Vehicle]:
+    async def get_live_pre_tomas(self, exclude_company_id: uuid.UUID | None = None) -> list[Vehicle]:
+        """Pre-tomas vigentes de toda la red.
+
+        Vencida es lo mismo que inexistente: el registro queda para el historial,
+        pero no se muestra en ningún lado.
+        """
+        stmt = select(Vehicle).where(
+            Vehicle.status == VehicleStatus.PRE_TOMA,
+            Vehicle.pre_toma_expires_at.isnot(None),
+            Vehicle.pre_toma_expires_at > datetime.now(timezone.utc),
+        )
+        if exclude_company_id is not None:
+            stmt = stmt.where(Vehicle.company_id != exclude_company_id)
+        result = await self.session.execute(stmt.order_by(Vehicle.created_at.desc()))
+        return list(result.scalars().all())
+
+    async def get_own_pre_tomas(self, company_id: uuid.UUID) -> list[Vehicle]:
+        """Las propias, vigentes o vencidas: la agencia necesita ver quién marcó
+        interés antes de que se le venzan, y qué pasó con las que no colocó."""
         result = await self.session.execute(
             select(Vehicle)
-            .where(Vehicle.status == VehicleStatus.PRE_TOMA, Vehicle.company_id.in_(company_ids))
+            .where(Vehicle.company_id == company_id, Vehicle.status == VehicleStatus.PRE_TOMA)
             .order_by(Vehicle.created_at.desc())
         )
         return list(result.scalars().all())

@@ -13,6 +13,12 @@ import type {
 } from "../types/vehicle";
 import type { Company } from "../types";
 
+export interface PreTomaInterest {
+  company_id: string;
+  company_name: string;
+  created_at: string;
+}
+
 function buildQuery(filters: VehicleFilters): string {
   const params = new URLSearchParams();
   if (filters.brand) params.set("brand", filters.brand);
@@ -77,6 +83,9 @@ export const vehicleService = {
 
   listPreToma: (): Promise<VehicleListItem[]> => api.get("/vehicles/pre-toma"),
 
+  // Las propias van aparte del stock: son autos que la agencia no se quiere quedar.
+  listMyPreTomas: (): Promise<VehicleListItem[]> => api.get("/vehicles/pre-toma/mias"),
+
   publishLiquidacion: (vehicleId: string, liquidacionPrice: number): Promise<void> =>
     api.patch(`/vehicles/${vehicleId}/liquidar`, { liquidacion_price: liquidacionPrice }),
 
@@ -87,7 +96,7 @@ export const vehicleService = {
 
   removeInterest: (vehicleId: string): Promise<void> => api.delete(`/vehicles/${vehicleId}/interest`),
 
-  listInterests: (vehicleId: string): Promise<{ company_id: string; company_name: string; created_at: string }[]> =>
+  listInterests: (vehicleId: string): Promise<PreTomaInterest[]> =>
     api.get(`/vehicles/${vehicleId}/interests`),
 
   uploadImage: async (vehicleId: string, file: File, displayOrder: number, isPrimary: boolean): Promise<VehicleImage> => {

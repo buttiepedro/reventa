@@ -31,8 +31,6 @@ const STATUS_OPTIONS: { value: VehicleStatus; label: string }[] = [
   { value: "pre_toma", label: "Pre Toma" },
 ];
 
-interface Interest { company_id: string; company_name: string; created_at: string }
-
 function horasRestantes(expiresAt: string): string {
   const diff = new Date(expiresAt).getTime() - Date.now();
   if (diff <= 0) return "Expirado";
@@ -124,9 +122,6 @@ export function MyStock() {
   const [loading, setLoading] = useState(true);
   const [hasSheet, setHasSheet] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [interestsModal, setInterestsModal] = useState<{ vehicleId: string; label: string } | null>(null);
-  const [interests, setInterests] = useState<Interest[]>([]);
-  const [loadingInterests, setLoadingInterests] = useState(false);
   const [liquidarVehicle, setLiquidarVehicle] = useState<VehicleListItem | null>(null);
 
   const load = async () => {
@@ -195,23 +190,6 @@ export function MyStock() {
     }
   };
 
-  const openInterests = async (v: VehicleListItem) => {
-    setInterestsModal({ vehicleId: v.id, label: `${v.brand} ${v.model} ${v.year}` });
-    setLoadingInterests(true);
-    try {
-      const list = await vehicleService.listInterests(v.id);
-      setInterests(list);
-    } catch {
-      toast.error("Error al cargar los interesados.");
-    } finally {
-      setLoadingInterests(false);
-    }
-  };
-
-  const handlePublish = async (id: string) => {
-    await handleStatusChange(id, "available");
-    setInterestsModal(null);
-  };
 
   const handleCancelLiquidacion = async (id: string) => {
     try {
@@ -223,7 +201,8 @@ export function MyStock() {
     }
   };
 
-  const preTomaVehicles = vehicles.filter((v) => v.status === "pre_toma");
+  // Las pre-tomas no son stock: son autos que la agencia NO se quiere quedar y
+  // ofrece a la red por 24 horas. Viven en Mercado → Pre-tomas.
   const regularVehicles = vehicles.filter((v) => v.status !== "pre_toma");
 
   return (
@@ -263,49 +242,8 @@ export function MyStock() {
         </div>
       )}
 
-      {!loading && preTomaVehicles.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            Pre Tomas
-            <Badge tone="purple">{preTomaVehicles.length}</Badge>
-          </h2>
-          <div className="bg-white rounded-xl border border-purple-100 shadow-sm divide-y divide-gray-50">
-            {preTomaVehicles.map((v) => (
-              <div key={v.id} className="px-4 py-3">
-                <div className="flex items-start gap-3">
-                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-canvas">
-                    {v.primary_image_url
-                      ? <img src={v.primary_image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
-                      : <div className="flex h-full items-center justify-center text-xs text-faint">Sin img</div>
-                    }
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-ink">{v.brand} {v.model} {v.year}</p>
-                    <p className="text-sm text-muted">
-                      {v.mileage.toLocaleString("es-AR")} km
-                      <span className="mx-1.5 text-line" aria-hidden="true">·</span>
-                      <span className="whitespace-nowrap">${Number(v.price_resale).toLocaleString("es-AR")}</span>
-                    </p>
-                  </div>
-                  <Badge tone="purple" className="shrink-0">Pre Toma</Badge>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button variant="secondary" size="sm" onClick={() => openInterests(v)}>Ver interesados</Button>
-                  <Button size="sm" onClick={() => handleStatusChange(v.id, "available")}>Publicar en red</Button>
-                  <Button variant="ghost" size="sm" onClick={() => navigate(`/vehicles/${v.id}/edit`)}>Editar</Button>
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(v.id)}>Eliminar</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {!loading && regularVehicles.length > 0 && (
         <div>
-          {preTomaVehicles.length > 0 && (
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Stock activo</h2>
-          )}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
             {regularVehicles.map((v) => (
               <div key={v.id} className="px-4 py-3">
@@ -378,40 +316,6 @@ export function MyStock() {
         />
       )}
 
-      {/* Interests modal */}
-      {interestsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">Interesados en Pre Toma</h3>
-                <p className="text-sm text-gray-500">{interestsModal.label}</p>
-              </div>
-              <button onClick={() => setInterestsModal(null)} className="text-gray-400 hover:text-gray-600">✕</button>
-            </div>
-            <div className="px-6 py-4 min-h-[80px]">
-              {loadingInterests && <div className="flex justify-center py-4"><Spinner /></div>}
-              {!loadingInterests && interests.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-4">Nadie ha marcado interés todavía.</p>
-              )}
-              {!loadingInterests && interests.length > 0 && (
-                <ul className="divide-y divide-gray-50">
-                  {interests.map((i) => (
-                    <li key={i.company_id} className="py-2.5 flex items-center justify-between">
-                      <span className="font-medium text-gray-800">{i.company_name}</span>
-                      <span className="text-xs text-gray-400">{new Date(i.created_at).toLocaleDateString("es-AR")}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="px-6 py-4 border-t border-gray-100 flex justify-between">
-              <Button variant="secondary" onClick={() => setInterestsModal(null)}>Cerrar</Button>
-              <Button onClick={() => handlePublish(interestsModal.vehicleId)}>Publicar en red</Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

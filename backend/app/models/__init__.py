@@ -7,6 +7,7 @@ from app.models.direct_match import DirectMatch
 from app.models.liquidacion import Liquidacion
 from app.models.notification import Notification
 from app.models.pre_toma_interest import PreTomaInterest
+from app.models.price_point import VehiclePricePoint
 from app.models.radar_entry import RadarEntry
 from app.models.sheet_config import CompanySheetConfig
 from app.models.stock_offer import StockOffer
@@ -26,6 +27,7 @@ __all__ = [
     "Notification",
     "PreTomaInterest",
     "RadarEntry",
+    "VehiclePricePoint",
     "Role",
     "StockOffer",
     "Transmission",

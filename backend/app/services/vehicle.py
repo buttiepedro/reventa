@@ -15,6 +15,7 @@ from app.repositories.company_favorite import CompanyFavoriteRepository
 from app.repositories.vehicle import VehicleRepository
 from app.repositories.vehicle_image import VehicleImageRepository
 from app.schemas.vehicle import PaginatedResponse, VehicleCreate, VehicleFilters, VehicleListItem, VehicleRead, VehicleStatusUpdate, VehicleUpdate
+from app.services import price_history
 
 
 class VehicleService:
@@ -60,6 +61,7 @@ class VehicleService:
         if vehicle.status == VehicleStatus.PRE_TOMA:
             self._set_pretoma_expiry(vehicle)
         saved = await self.repo.save(vehicle)
+        await price_history.record(self.session, saved, price_history.PUBLICADO)
         if saved.status == VehicleStatus.PRE_TOMA:
             await self._notify_favorites_pre_toma(saved)
         return saved
@@ -167,11 +169,14 @@ class VehicleService:
         return items
 
     async def get_pre_toma_for_company(self, company_id: uuid.UUID) -> list[VehicleListItem]:
-        """Returns pre_toma vehicles from confirmed favorites of company_id."""
-        confirmed_ids = await self.fav_repo.get_confirmed_ids(company_id)
-        if not confirmed_ids:
-            return []
-        vehicles = await self.repo.get_pre_toma_by_companies(confirmed_ids)
+        """Las pre-tomas vigentes de toda la red.
+
+        Antes sólo se veían las de las agencias conectadas, y una agencia sin
+        conexiones no veía ninguna ni lograba que vieran las suyas. Una pre-toma
+        dura 24 horas: restringir quién la ve es restringir sus chances.
+        """
+        confirmed_ids = set(await self.fav_repo.get_confirmed_ids(company_id))
+        vehicles = await self.repo.get_live_pre_tomas(exclude_company_id=company_id)
         items = []
         for v in vehicles:
             await self.repo.session.refresh(v, ["images", "company"])
@@ -182,7 +187,25 @@ class VehicleService:
                     **{k: val for k, val in v.__dict__.items() if not k.startswith("_") and k not in {"images", "company"}},
                     company_name=v.company.name,
                     primary_image_url=primary_url,
-                    is_favorite_company=True,
+                    is_favorite_company=v.company_id in confirmed_ids,
+                )
+            )
+        return items
+
+    async def get_own_pre_tomas(self, company_id: uuid.UUID) -> list[VehicleListItem]:
+        """Las pre-tomas propias. Van aparte del stock a propósito."""
+        vehicles = await self.repo.get_own_pre_tomas(company_id)
+        items = []
+        for v in vehicles:
+            await self.repo.session.refresh(v, ["images", "company"])
+            primary = next((img for img in v.images if img.is_primary), v.images[0] if v.images else None)
+            primary_url = await s3.generate_view_url(primary.s3_key) if primary else None
+            items.append(
+                VehicleListItem(
+                    **{k: val for k, val in v.__dict__.items() if not k.startswith("_") and k not in {"images", "company"}},
+                    company_name=v.company.name,
+                    primary_image_url=primary_url,
+                    is_favorite_company=False,
                 )
             )
         return items
@@ -218,6 +241,8 @@ class VehicleService:
         vehicle.status = data.status
         if vehicle.status == VehicleStatus.PRE_TOMA and old_status != VehicleStatus.PRE_TOMA:
             self._set_pretoma_expiry(vehicle)
+        if vehicle.status == VehicleStatus.SOLD and old_status != VehicleStatus.SOLD:
+            await price_history.record(self.session, vehicle, price_history.VENDIDO)
         if vehicle.status == VehicleStatus.SOLD:
             from sqlalchemy import update as sa_update
             await self.session.execute(
@@ -249,11 +274,10 @@ class VehicleService:
             )
         )
         expired = result.scalars().all()
-        for v in expired:
-            v.status = VehicleStatus.AVAILABLE
-            v.pre_toma_expires_at = None
-        if expired:
-            await session.commit()
+        # Antes esto las pasaba a `available`, o sea que el auto que la agencia no
+        # quería tomar terminaba publicado como stock suyo. Ahora simplemente dejan
+        # de verse: el filtro por `pre_toma_expires_at` las excluye en todas las
+        # consultas, y el registro queda para el historial de precios.
         return len(expired)
 
     async def get_public(self, share_token: uuid.UUID) -> dict:

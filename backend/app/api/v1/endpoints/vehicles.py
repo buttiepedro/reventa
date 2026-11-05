@@ -25,7 +25,7 @@ from app.schemas.vehicle import (
     VehicleUpdate,
 )
 from app.schemas.vehicle_image import UploadUrlResponse, VehicleImageCreate, VehicleImageRead
-from app.services import radar
+from app.services import price_history, radar
 from app.services.vehicle import VehicleService
 from app.services.vehicle_image import VehicleImageService
 
@@ -134,6 +134,28 @@ async def create_vehicle(
     return result
 
 
+@router.get("/pre-toma/mias", response_model=list[VehicleListItem])
+async def list_my_pre_tomas(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Las pre-tomas propias, aparte del stock: son autos que la agencia no se
+    quiere quedar, no inventario."""
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
+    return await VehicleService(session).get_own_pre_tomas(current_user.company_id)
+
+
+@router.get("/pre-toma", response_model=list[VehicleListItem])
+async def list_pre_toma(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
+    return await VehicleService(session).get_pre_toma_for_company(current_user.company_id)
+
+
 @router.get("/{vehicle_id}", response_model=VehicleRead)
 async def get_vehicle(
     vehicle_id: uuid.UUID,
@@ -224,6 +246,9 @@ async def publish_liquidacion(
         expires_at=datetime.now(tz.utc) + timedelta(hours=72),
     )
     session.add(liq)
+    await price_history.record(
+        session, vehicle, price_history.LIQUIDADO, price_resale=data.liquidacion_price
+    )
     # El Radar se cruza contra el precio de liquidación: es más barato que el de
     # lista, así que entra en presupuestos donde el auto antes no entraba.
     await radar.notify_opportunity(
@@ -332,16 +357,6 @@ async def set_primary_image(
 
 
 # ─── Pre Toma ────────────────────────────────────────────────
-
-
-@router.get("/pre-toma", response_model=list[VehicleListItem])
-async def list_pre_toma(
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-):
-    if not current_user.company_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company users only")
-    return await VehicleService(session).get_pre_toma_for_company(current_user.company_id)
 
 
 @router.post("/{vehicle_id}/interest", status_code=status.HTTP_201_CREATED)

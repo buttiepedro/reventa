@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session
 from app.models.vehicle import Vehicle, VehicleStatus
+from app.services import price_history
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -31,6 +32,20 @@ def _trimmed_mean(values: list[float], trim_pct: float = 0.1) -> float:
     cut = max(1, int(len(sorted_v) * trim_pct))
     trimmed = sorted_v[cut:-cut] if len(sorted_v) > 2 * cut else sorted_v
     return mean(trimmed)
+
+
+@router.get("/historial")
+async def price_history_for_model(
+    brand: str = Query(...),
+    model: str = Query(...),
+    year: int = Query(...),
+    km: int = Query(0),
+    current_user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Precios sugeridos a partir de lo observado, no sólo del stock de hoy."""
+    points = await price_history.history_for(session, brand, model, year)
+    return price_history.suggested(points, km)
 
 
 @router.get("/valuate", response_model=ValuationResult)
