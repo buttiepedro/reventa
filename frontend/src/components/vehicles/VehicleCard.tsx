@@ -87,18 +87,18 @@ export function VehicleCard({ vehicle, showPreTomaActions: _showPreTomaActions }
                 <p className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-faint">Reventa</p>
                 {vehicle.is_liquidacion && vehicle.liquidacion_price ? (
                   <>
-                    <p className="font-mono text-xs leading-tight text-faint line-through">USD {money(vehicle.price_resale)}</p>
-                    <p className="font-mono text-lg font-bold leading-none text-red-600">USD {money(vehicle.liquidacion_price)}</p>
+                    <p className="font-mono text-xs leading-tight text-faint line-through">${money(vehicle.price_resale)}</p>
+                    <p className="font-mono text-lg font-bold leading-none text-red-600">${money(vehicle.liquidacion_price)}</p>
                   </>
                 ) : (
-                  <p className="font-mono text-lg font-bold leading-none text-ink">USD {money(vehicle.price_resale)}</p>
+                  <p className="font-mono text-lg font-bold leading-none text-ink">${money(vehicle.price_resale)}</p>
                 )}
               </div>
             )}
             <div className={isClientMode ? "" : "text-right"}>
               <p className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-faint">Precio</p>
               <p className={`font-mono font-bold leading-none ${isClientMode ? "text-lg text-brand" : "text-sm text-muted"}`}>
-                USD {money(vehicle.price_public)}
+                ${money(vehicle.price_public)}
               </p>
             </div>
           </div>

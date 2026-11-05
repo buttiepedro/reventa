@@ -43,7 +43,7 @@ function MatchCard({ item, index, total, onAccept, onReject }: {
           <span className="font-semibold text-ink">{item.vehicle_label}</span>
         </p>
         <p className="mt-1.5 font-mono text-[28px] font-bold leading-none tracking-tight text-ink">
-          USD {fmt(item.vehicle_price)}
+          ${fmt(item.vehicle_price)}
         </p>
         {item.rank_score != null && (
           <div className="mt-2.5 flex gap-3.5 font-mono text-[12px] text-faint">
